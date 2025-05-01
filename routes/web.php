@@ -202,7 +202,8 @@ Route::prefix('admin')->middleware(['auth', 'admin'])->name('admin.')->group(fun
     
     // AI Settings
     Route::get('/ai-settings', [\App\Http\Controllers\Admin\AISettingController::class, 'index'])->name('ai-settings.index');
-    Route::post('/ai-settings', [\App\Http\Controllers\Admin\AISettingController::class, 'update'])->name('ai-settings.update');
+    Route::put('/ai-settings', [\App\Http\Controllers\Admin\AISettingController::class, 'update'])->name('ai-settings.update');
+    Route::post('/ai-settings/test-connection', [\App\Http\Controllers\Admin\AISettingController::class, 'testConnection'])->name('ai-settings.test-connection');
     
     // System Update from GitHub
     Route::get('/update', [\App\Http\Controllers\Admin\UpdateController::class, 'index'])->name('update.index');

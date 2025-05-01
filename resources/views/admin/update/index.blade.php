@@ -51,19 +51,18 @@
         
         <!-- Update Actions -->
         <div class="flex flex-col items-center justify-center">
-            <div id="update-actions">
-                <!-- زر التحقق من التحديثات / التحديث -->
-                <div id="check-updates-container">
-                    <button type="button" class="check-updates-btn px-5 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500" id="refresh-updates">
-                        <i class="fas fa-sync-alt mr-2" id="update-icon"></i> <span id="update-btn-text">Check for Updates</span>
-                    </button>
-                </div>
-                
-                <!-- نموذج التحديث (يظهر فقط عند الضغط على زر Update Now) -->
-                <form action="/admin/update/pull" method="POST" id="update-form" class="hidden">
-                    @csrf
-                </form>
-            </div>
+            <!-- زر التحقق من التحديثات -->
+            <button type="button" id="check-updates-btn" class="check-updates-btn px-5 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                <i class="fas fa-sync-alt mr-2" id="update-icon"></i> <span id="update-btn-text">Check for Updates</span>
+            </button>
+            
+            <!-- نموذج التحديث -->
+            <form action="/admin/update/pull" method="POST" id="update-form" class="mt-4 hidden">
+                @csrf
+                <button type="submit" class="update-btn">
+                    <i class="fas fa-cloud-download-alt mr-2"></i> Update Now
+                </button>
+            </form>
         </div>
     </div>
 </div>
@@ -77,28 +76,34 @@
         // Apply animation to the update container on page load
         $('.update-container').addClass('animate-fade-in-up');
         
-        // قم بفحص التحديثات عند تحميل الصفحة
-        checkForUpdates();
-        
         // تهيئة زر التحقق من التحديثات
-        $('#refresh-updates').click(function(e) {
+        $('#check-updates-btn').click(function(e) {
             e.preventDefault();
             checkForUpdates();
         });
+        
+        // قم بفحص التحديثات عند تحميل الصفحة
+        checkForUpdates();
         
         // دالة التحقق من وجود تحديثات
         function checkForUpdates() {
             let $statusIndicator = $('#status-indicator');
             let $statusText = $('#status-text');
-            let $button = $('#refresh-updates');
-            let $updateNowContainer = $('#update-now-container');
+            let $checkBtn = $('#check-updates-btn');
+            let $updateIcon = $('#update-icon');
+            let $updateBtnText = $('#update-btn-text');
+            let $updateForm = $('#update-form');
             let $lastChecked = $('#last-checked');
             let $lastCheckedTime = $('#last-checked-time');
             let $currentVersion = $('#current-version');
             
             // تعطيل الزر وإظهار مؤشر التحميل
-            $button.prop('disabled', true);
-            $button.html('<i class="fas fa-spinner fa-spin mr-2"></i> Checking...');
+            $checkBtn.prop('disabled', true);
+            $updateIcon.removeClass('fa-sync-alt fa-cloud-download-alt').addClass('fa-spinner fa-spin');
+            $updateBtnText.text('Checking for Updates...');
+            
+            // إخفاء نموذج التحديث أثناء التحقق
+            $updateForm.addClass('hidden');
             
             // طلب AJAX للتحقق من التحديثات
             $.ajax({
@@ -120,7 +125,14 @@
                             // هناك تحديثات متاحة
                             $statusIndicator.removeClass('updated').addClass('outdated');
                             $statusText.text('Updates Available');
-                            $updateNowContainer.removeClass('hidden');
+                            
+                            // إظهار نموذج التحديث
+                            $updateForm.removeClass('hidden');
+                            
+                            // إعادة تفعيل زر التحقق
+                            $checkBtn.prop('disabled', false);
+                            $updateIcon.removeClass('fa-spinner fa-spin').addClass('fa-sync-alt');
+                            $updateBtnText.text('Check Again');
                             
                             // إظهار إشعار التحديثات
                             showToast('Update Available', 'A new version is available for your system.', 'warning');
@@ -128,7 +140,14 @@
                             // النظام محدث
                             $statusIndicator.removeClass('outdated').addClass('updated');
                             $statusText.text('System Up to Date');
-                            $updateNowContainer.addClass('hidden');
+                            
+                            // إخفاء نموذج التحديث
+                            $updateForm.addClass('hidden');
+                            
+                            // إعادة تفعيل زر التحقق
+                            $checkBtn.prop('disabled', false);
+                            $updateIcon.removeClass('fa-spinner fa-spin').addClass('fa-sync-alt');
+                            $updateBtnText.text('Check for Updates');
                             
                             // إظهار إشعار النظام محدث
                             showToast('System Check', 'Your system is up to date with the latest version.', 'success');
@@ -137,19 +156,29 @@
                         // حدث خطأ أثناء التحقق
                         $statusText.text('Error checking updates');
                         showToast('Error', response.message, 'error');
+                        resetCheckButton();
                     }
                 },
                 error: function(xhr, status, error) {
                     // حدث خطأ في الاتصال
                     $statusText.text('Connection error');
                     showToast('Connection Error', 'Could not connect to the server to check for updates.', 'error');
-                },
-                complete: function() {
-                    // إعادة تفعيل الزر
-                    $button.prop('disabled', false);
-                    $button.html('<i class="fas fa-sync-alt mr-2"></i> Check for Updates');
+                    resetCheckButton();
                 }
             });
+        }
+        
+        // إعادة تعيين زر التحقق إلى حالته الأصلية
+        function resetCheckButton() {
+            let $checkBtn = $('#check-updates-btn');
+            let $updateIcon = $('#update-icon');
+            let $updateBtnText = $('#update-btn-text');
+            let $updateForm = $('#update-form');
+            
+            $checkBtn.prop('disabled', false);
+            $updateIcon.removeClass('fa-spinner fa-spin').addClass('fa-sync-alt');
+            $updateBtnText.text('Check for Updates');
+            $updateForm.addClass('hidden');
         }
         
         // دالة عرض إشعار منبثق
