@@ -47,6 +47,17 @@ class FrameworkController extends Controller
     }
 
     /**
+     * Get framework data for preview modal.
+     *
+     * @param  \App\Models\Framework  $framework
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function preview(Framework $framework)
+    {
+        return response()->json($framework);
+    }
+
+    /**
      * Show the form for creating a new framework.
      *
      * @return \Illuminate\View\View

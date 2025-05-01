@@ -153,6 +153,9 @@ Route::prefix('admin')->middleware(['auth', 'admin'])->name('admin.')->group(fun
     // Dashboard
     Route::get('/', [\App\Http\Controllers\Admin\DashboardController::class, 'index'])->name('dashboard');
     Route::get('/dashboard', [\App\Http\Controllers\Admin\DashboardController::class, 'index'])->name('dashboard');
+    
+    // Framework Routes
+    Route::get('/frameworks/{framework}/preview', [\App\Http\Controllers\Admin\FrameworkController::class, 'preview'])->name('frameworks.preview');
     Route::get('/dashboard/refresh-stats', [\App\Http\Controllers\Admin\DashboardController::class, 'refreshStats'])->name('dashboard.refresh-stats');
     Route::get('/dashboard/refresh-activity', [\App\Http\Controllers\Admin\DashboardController::class, 'refreshActivity'])->name('dashboard.refresh-activity');
     

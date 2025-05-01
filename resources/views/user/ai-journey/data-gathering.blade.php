@@ -30,12 +30,12 @@
     </div>
     
     <!-- Modern Chat Interface with Sidebar -->
-    <div class="container mx-auto py-8 px-4">
-        <div class="flex flex-col lg:flex-row gap-6">
+    <div class="container mx-auto py-4 sm:py-6 md:py-8 px-2 sm:px-4">
+        <div class="flex flex-col lg:flex-row gap-4 sm:gap-6">
             <!-- Left Sidebar for Context and Files -->
-            <div class="w-full lg:w-1/4">
+            <div class="w-full lg:w-1/3 xl:w-1/4">
                 <!-- Framework Selector -->
-                <div class="bg-white rounded-lg shadow-sm p-5 mb-6 border-t-4 border-blue-600">
+                <div class="bg-white rounded-lg shadow-sm p-3 sm:p-4 md:p-5 mb-4 sm:mb-6 border-t-4 border-blue-600">
                     <h3 class="text-lg font-medium text-gray-800 mb-3">Framework Selection</h3>
                     <select id="framework-selector" class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5">
                         <option value="" selected disabled>Select a framework</option>
@@ -256,35 +256,7 @@
                     </div>
                 </div>
                 
-                <!-- Process Visualization Panel -->
-                <div class="bg-white rounded-lg shadow-sm p-5 mb-6">
-                    <div class="flex items-center justify-between mb-3">
-                        <h3 class="text-lg font-medium text-gray-800">Process Visualization</h3>
-                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                            <span class="w-1.5 h-1.5 mr-1 bg-green-500 rounded-full"></span>Premium
-                        </span>
-                    </div>
-                    
-                    <div id="visualization-area" class="mb-4 p-4 bg-gray-50 rounded-lg h-48 flex items-center justify-center">
-                        <div id="visualization-placeholder" class="text-center">
-                            <svg class="w-12 h-12 mx-auto text-gray-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"></path>
-                            </svg>
-                            <p class="text-sm text-gray-500">Process visualization will appear here</p>
-                        </div>
-                    </div>
-                    
-                    <div class="space-y-2">
-                        <button id="generate-process-map" class="w-full text-sm text-green-700 bg-green-50 hover:bg-green-100 font-medium rounded-lg px-3 py-2 text-center inline-flex items-center justify-center">
-                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg>
-                            Generate Process Map
-                        </button>
-                        <button id="generate-data-model" class="w-full text-sm text-green-700 bg-green-50 hover:bg-green-100 font-medium rounded-lg px-3 py-2 text-center inline-flex items-center justify-center">
-                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2 1 3 3 3h10c2 0 3-1 3-3V7c0-2-1-3-3-3H7c-2 0-3 1-3 3z"></path></svg>
-                            Generate Data Model
-                        </button>
-                    </div>
-                </div>
+                <!-- La sección de Visualización del Proceso ha sido eliminada -->
                 
                 <!-- Quick Tips and Hints -->
                 <div class="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-5 mt-6 border border-blue-100">
@@ -307,7 +279,7 @@
             </div>
             
             <!-- Main Chat Area -->
-            <div class="w-full lg:w-3/4 bg-white rounded-lg shadow-sm overflow-hidden flex flex-col" style="min-height: 70vh;">
+            <div class="w-full lg:w-2/3 xl:w-3/4 bg-white rounded-lg shadow-sm overflow-hidden flex flex-col" style="min-height: 60vh; max-height: calc(100vh - 180px);">
                 <!-- Chat Header -->
                 <div class="px-6 py-4 bg-gradient-to-r from-blue-600 to-indigo-700 text-white">
                     <div class="flex items-center justify-between">
@@ -330,8 +302,8 @@
                     </div>
                 </div>
                 
-                <!-- Chat Messages -->
-                <div class="flex-grow p-6 overflow-y-auto" id="chatMessages">
+                <!-- Chat Messages Container -->
+                <div id="chatMessages" class="flex-1 p-2 sm:p-3 md:p-4 overflow-y-auto" style="min-height: 300px; max-height: calc(100vh - 250px);">
                     <!-- Welcome Message -->
                     <div class="message ai-message">
                         <div class="message-content">
@@ -344,25 +316,27 @@
                 </div>
                 
                 <!-- Message Input Form with File Upload - Enhanced Design -->
-                <div class="p-4 border-t border-gray-100">
+                <div class="p-2 sm:p-3 md:p-4 border-t border-gray-100">
                     <form id="chat-form" class="flex flex-col" method="POST" enctype="multipart/form-data" action="{{ route('user.ai-journey.chat') }}">
                         @csrf
-                        <!-- Message Input with Buttons -->
-                        <div class="flex items-center w-full">
-                            <button type="button" id="file-upload-btn" class="rounded-lg px-3 py-3 bg-gray-100 flex items-center justify-center text-gray-700 hover:bg-gray-200 transition-colors mr-2">
+                        <!-- Message Input with Buttons - Responsive Design -->
+                        <div class="flex flex-col sm:flex-row items-center w-full gap-2">
+                            <div class="flex items-center w-full sm:w-auto">
+                                <button type="button" id="file-upload-btn" class="rounded-lg px-2 sm:px-3 py-2 sm:py-3 bg-gray-100 flex items-center justify-center text-gray-700 hover:bg-gray-200 transition-colors">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
                                 </svg>
                             </button>
-                            <div class="relative flex-grow">
-                                <input type="text" id="user-message" name="message" placeholder="Type your message here..." class="w-full bg-gray-50 text-gray-700 rounded-lg px-4 py-3 pr-12 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" required>
+                            </div>
+                            <div class="relative flex-grow w-full">
+                                <input type="text" id="user-message" name="message" placeholder="Type your message here..." class="w-full bg-gray-50 text-gray-700 rounded-lg px-3 sm:px-4 py-2 sm:py-3 pr-12 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base" required>
                                 <button type="button" id="voice-input" class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-blue-500 transition-colors">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 sm:h-5 sm:w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
                                     </svg>
                                 </button>
                             </div>
-                            <button type="submit" id="send-button" class="rounded-lg px-4 py-3 ml-2 bg-blue-600 flex items-center justify-center text-white hover:bg-blue-700 transition-colors">
+                            <button type="submit" id="send-button" class="rounded-lg px-3 sm:px-4 py-2 sm:py-3 bg-blue-600 flex items-center justify-center text-white hover:bg-blue-700 transition-colors w-full sm:w-auto mt-2 sm:mt-0">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
                                 </svg>
@@ -373,11 +347,11 @@
                         <!-- Hidden File Input -->
                         <input type="file" id="file-upload" name="file" class="hidden" multiple>
                         
-                        <!-- File Preview Area -->
-                        <div id="file-preview-area" class="mt-3 hidden">
-                            <div class="p-3 bg-gray-50 rounded-lg border border-gray-200">
-                                <div class="flex justify-between items-center mb-2">
-                                    <h4 class="text-sm font-medium text-gray-700">Attached Files</h4>
+                        <!-- File Preview Area - Responsive -->
+                        <div id="file-preview-area" class="mt-2 sm:mt-3 hidden">
+                            <div class="p-2 sm:p-3 bg-gray-50 rounded-lg border border-gray-200">
+                                <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-2">
+                                    <h4 class="text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-0">Attached Files</h4>
                                     <button type="button" id="clear-files" class="text-xs text-red-500 hover:text-red-700">
                                         Clear all
                                     </button>
@@ -418,12 +392,21 @@
     }
     
     .message-content {
-        max-width: 80%;
-        padding: 14px 18px;
-        border-radius: 18px;
+        max-width: 90%;
+        padding: 10px 14px;
+        border-radius: 16px;
         position: relative;
         box-shadow: 0 1px 2px rgba(0,0,0,0.05);
         line-height: 1.5;
+        font-size: 0.95rem;
+    }
+    
+    @media (min-width: 640px) {
+        .message-content {
+            max-width: 80%;
+            padding: 14px 18px;
+            font-size: 1rem;
+        }
     }
     
     .user-message .message-content {
@@ -1035,75 +1018,7 @@
             });
         }
 
-        // Initialize process visualization functionality
-        // NOTA: Esta función ha sido comentada y reemplazada por el archivo externo ai-journey-fix.js
-        function initializeProcessVisualization() {
-            // Función desactivada para evitar conflictos
-            console.log('Función original desactivada, usando versión externa');
-            return;
-            // Setup modal confirm button
-            if (confirmAssignmentBtn) {
-                confirmAssignmentBtn.addEventListener('click', function() {
-                    const selectedSME = smeSelect.value;
-                    let smeEmail = '';
-                    
-                    if (selectedSME === 'custom') {
-                        smeEmail = document.getElementById('sme-email').value;
-                        if (!smeEmail || !smeEmail.includes('@')) {
-                            alert('Please enter a valid email address');
-                            return;
-                        }
-                    }
-                    
-                    // Here you would typically make an API call to assign the question
-                    // For demo purposes, we'll just update the UI
-                    if (currentQuestionId !== null) {
-                        const questionElement = document.querySelector(`[data-question-id="${currentQuestionId}"]`);
-                        if (questionElement) {
-                            const statusElement = questionElement.querySelector('.question-status');
-                            const buttonElement = questionElement.querySelector('.assign-sme-btn');
-                            
-                            if (statusElement) {
-                                statusElement.textContent = `Assigned to ${selectedSME === 'custom' ? smeEmail : selectedSME}`;
-                                statusElement.classList.remove('text-gray-500');
-                                statusElement.classList.add('text-purple-600');
-                            }
-                            
-                            if (buttonElement) {
-                                buttonElement.textContent = 'Reassign';
-                            }
-                            
-                            // Add notification about assignment
-                            addMessage('ai', `<div class="bg-purple-50 border-l-4 border-purple-500 p-4">
-                                <p class="text-purple-700">Question assigned to <strong>${selectedSME === 'custom' ? smeEmail : selectedSME}</strong>.</p>
-                                <p class="text-xs text-purple-600 mt-1">They will be notified to provide their input.</p>
-                            </div>`, true);
-                        }
-                    }
-                    
-                    // Hide modal
-                    smeAssignmentModal.classList.add('hidden');
-                    currentQuestionId = null;
-                });
-            }
-            
-            // Global event delegation for assign buttons
-            document.addEventListener('click', function(e) {
-                if (e.target && e.target.classList.contains('assign-sme-btn')) {
-                    const questionElement = e.target.closest('.pending-question');
-                    if (questionElement) {
-                        currentQuestionId = questionElement.getAttribute('data-question-id');
-                        const questionText = questionElement.querySelector('.question-text').textContent;
-                        
-                        // Update modal with question details
-                        document.getElementById('modal-question').textContent = questionText;
-                        
-                        // Show modal
-                        smeAssignmentModal.classList.remove('hidden');
-                    }
-                }
-            });
-        }
+        // La función de visualización del proceso ha sido eliminada
         
         // Function to add a pending question to the SME panel
         function addPendingQuestion(question) {
@@ -1213,203 +1128,7 @@
             document.getElementById('partial-download-section').classList.remove('hidden');
         }
         
-        // Helper function to create a PRINCE2 process map
-        function createPRINCE2ProcessMap() {
-            return `
-            <svg width="100%" height="100%" viewBox="0 0 800 300" xmlns="http://www.w3.org/2000/svg">
-                <style>
-                    .box { fill: #E5E7EB; stroke: #4F46E5; stroke-width: 2; }
-                    .arrow { stroke: #4F46E5; stroke-width: 2; fill: none; }
-                    .text { font-family: Arial; font-size: 14px; fill: #1F2937; }
-                    .phase { font-family: Arial; font-size: 12px; fill: #4F46E5; font-weight: bold; }
-                </style>
-                
-                <!-- Starting Up Phase -->
-                <rect class="box" x="50" y="50" width="120" height="60" rx="5" />
-                <text class="phase" x="110" y="45">Starting Up</text>
-                <text class="text" x="110" y="80" text-anchor="middle">Project Mandate</text>
-                
-                <!-- Initiating Phase -->
-                <rect class="box" x="250" y="50" width="120" height="60" rx="5" />
-                <text class="phase" x="310" y="45">Initiating</text>
-                <text class="text" x="310" y="80" text-anchor="middle">Project Brief</text>
-                
-                <!-- Controlling Phase -->
-                <rect class="box" x="450" y="50" width="120" height="60" rx="5" />
-                <text class="phase" x="510" y="45">Controlling</text>
-                <text class="text" x="510" y="80" text-anchor="middle">Work Packages</text>
-                
-                <!-- Closing Phase -->
-                <rect class="box" x="650" y="50" width="120" height="60" rx="5" />
-                <text class="phase" x="710" y="45">Closing</text>
-                <text class="text" x="710" y="80" text-anchor="middle">Final Report</text>
-                
-                <!-- Managing Phase -->
-                <rect class="box" x="350" y="200" width="120" height="60" rx="5" />
-                <text class="phase" x="410" y="195">Managing</text>
-                <text class="text" x="410" y="225" text-anchor="middle">Direction</text>
-                <text class="text" x="410" y="245" text-anchor="middle">Project Board</text>
-                
-                <!-- Arrows -->
-                <path class="arrow" d="M170 80 H 250" marker-end="url(#arrowhead)" />
-                <path class="arrow" d="M370 80 H 450" marker-end="url(#arrowhead)" />
-                <path class="arrow" d="M570 80 H 650" marker-end="url(#arrowhead)" />
-                
-                <path class="arrow" d="M110 110 V 230 H 350" marker-end="url(#arrowhead)" />
-                <path class="arrow" d="M310 110 V 170 H 375" marker-end="url(#arrowhead)" />
-                <path class="arrow" d="M510 110 V 170 H 450" marker-end="url(#arrowhead)" />
-                <path class="arrow" d="M710 110 V 230 H 470" marker-end="url(#arrowhead)" />
-                
-                <!-- Arrowhead marker -->
-                <defs>
-                    <marker id="arrowhead" markerWidth="10" markerHeight="7" 
-                    refX="9" refY="3.5" orient="auto">
-                    <polygon points="0 0, 10 3.5, 0 7" fill="#4F46E5" />
-                    </marker>
-                </defs>
-            </svg>
-            `;
-        }
-        
-        // Helper function to create an Idea Management process map
-        function createIdeaManagementProcessMap() {
-            return `
-            <svg width="100%" height="100%" viewBox="0 0 800 300" xmlns="http://www.w3.org/2000/svg">
-                <style>
-                    .box { fill: #E0F2FE; stroke: #0284C7; stroke-width: 2; }
-                    .arrow { stroke: #0284C7; stroke-width: 2; fill: none; }
-                    .text { font-family: Arial; font-size: 14px; fill: #1F2937; }
-                    .phase { font-family: Arial; font-size: 12px; fill: #0284C7; font-weight: bold; }
-                </style>
-                
-                <!-- Idea Generation -->
-                <rect class="box" x="50" y="100" width="120" height="60" rx="5" />
-                <text class="phase" x="110" y="95">Phase 1</text>
-                <text class="text" x="110" y="130" text-anchor="middle">Idea Generation</text>
-                
-                <!-- Initial Screening -->
-                <rect class="box" x="250" y="100" width="120" height="60" rx="5" />
-                <text class="phase" x="310" y="95">Phase 2</text>
-                <text class="text" x="310" y="130" text-anchor="middle">Initial Screening</text>
-                
-                <!-- Idea Evaluation -->
-                <rect class="box" x="450" y="100" width="120" height="60" rx="5" />
-                <text class="phase" x="510" y="95">Phase 3</text>
-                <text class="text" x="510" y="130" text-anchor="middle">Idea Evaluation</text>
-                
-                <!-- Implementation -->
-                <rect class="box" x="650" y="100" width="120" height="60" rx="5" />
-                <text class="phase" x="710" y="95">Phase 4</text>
-                <text class="text" x="710" y="130" text-anchor="middle">Implementation</text>
-                
-                <!-- Arrows -->
-                <path class="arrow" d="M170 130 H 250" marker-end="url(#arrowhead-blue)" />
-                <path class="arrow" d="M370 130 H 450" marker-end="url(#arrowhead-blue)" />
-                <path class="arrow" d="M570 130 H 650" marker-end="url(#arrowhead-blue)" />
-                
-                <!-- Loop back arrow -->
-                <path class="arrow" d="M450 100 C 450 50, 250 50, 250 100" marker-end="url(#arrowhead-blue)" />
-                <text class="text" x="350" y="70" text-anchor="middle">Refinement Loop</text>
-                
-                <!-- Arrowhead marker -->
-                <defs>
-                    <marker id="arrowhead-blue" markerWidth="10" markerHeight="7" 
-                    refX="9" refY="3.5" orient="auto">
-                    <polygon points="0 0, 10 3.5, 0 7" fill="#0284C7" />
-                    </marker>
-                </defs>
-            </svg>
-            `;
-        }
-        
-        // Helper function to create a generic process map
-        function createGenericProcessMap(framework) {
-            return `
-            <svg width="100%" height="100%" viewBox="0 0 800 300" xmlns="http://www.w3.org/2000/svg">
-                <style>
-                    .box { fill: #F3F4F6; stroke: #4B5563; stroke-width: 2; }
-                    .arrow { stroke: #4B5563; stroke-width: 2; fill: none; }
-                    .text { font-family: Arial; font-size: 14px; fill: #1F2937; }
-                    .title { font-family: Arial; font-size: 16px; fill: #1F2937; font-weight: bold; }
-                </style>
-                
-                <text class="title" x="400" y="30" text-anchor="middle">${framework.toUpperCase().replace(/-/g, ' ')} Process</text>
-                
-                <!-- Input -->
-                <rect class="box" x="100" y="100" width="120" height="60" rx="5" />
-                <text class="text" x="160" y="130" text-anchor="middle">Input</text>
-                
-                <!-- Process -->
-                <rect class="box" x="350" y="100" width="120" height="60" rx="5" />
-                <text class="text" x="410" y="130" text-anchor="middle">Process</text>
-                
-                <!-- Output -->
-                <rect class="box" x="600" y="100" width="120" height="60" rx="5" />
-                <text class="text" x="660" y="130" text-anchor="middle">Output</text>
-                
-                <!-- Arrows -->
-                <path class="arrow" d="M220 130 H 350" marker-end="url(#arrowhead-gray)" />
-                <path class="arrow" d="M470 130 H 600" marker-end="url(#arrowhead-gray)" />
-                
-                <!-- Arrowhead marker -->
-                <defs>
-                    <marker id="arrowhead-gray" markerWidth="10" markerHeight="7" 
-                    refX="9" refY="3.5" orient="auto">
-                    <polygon points="0 0, 10 3.5, 0 7" fill="#4B5563" />
-                    </marker>
-                </defs>
-            </svg>
-            `;
-        }
-        
-        // Helper function to create a data model
-        function createDataModel(framework) {
-            return `
-            <svg width="100%" height="100%" viewBox="0 0 800 300" xmlns="http://www.w3.org/2000/svg">
-                <style>
-                    .entity { fill: #EFF6FF; stroke: #2563EB; stroke-width: 2; }
-                    .relation { stroke: #2563EB; stroke-width: 2; fill: none; }
-                    .text { font-family: Arial; font-size: 14px; fill: #1F2937; }
-                    .entity-title { font-family: Arial; font-size: 14px; fill: #2563EB; font-weight: bold; }
-                    .entity-field { font-family: Arial; font-size: 12px; fill: #4B5563; }
-                </style>
-                
-                <!-- Main Entity -->
-                <rect class="entity" x="300" y="50" width="200" height="120" rx="5" />
-                <text class="entity-title" x="400" y="75" text-anchor="middle">${framework.toUpperCase().replace(/-/g, ' ')}</text>
-                <line x1="310" y1="85" x2="490" y2="85" stroke="#2563EB" stroke-width="1" />
-                <text class="entity-field" x="320" y="105">id (PK)</text>
-                <text class="entity-field" x="320" y="125">name</text>
-                <text class="entity-field" x="320" y="145">description</text>
-                
-                <!-- Related Entity 1 -->
-                <rect class="entity" x="100" y="180" width="180" height="100" rx="5" />
-                <text class="entity-title" x="190" y="205" text-anchor="middle">Documentation</text>
-                <line x1="110" y1="215" x2="270" y2="215" stroke="#2563EB" stroke-width="1" />
-                <text class="entity-field" x="120" y="235">id (PK)</text>
-                <text class="entity-field" x="120" y="255">${framework}_id (FK)</text>
-                
-                <!-- Related Entity 2 -->
-                <rect class="entity" x="520" y="180" width="180" height="100" rx="5" />
-                <text class="entity-title" x="610" y="205" text-anchor="middle">Deliverables</text>
-                <line x1="530" y1="215" x2="690" y2="215" stroke="#2563EB" stroke-width="1" />
-                <text class="entity-field" x="540" y="235">id (PK)</text>
-                <text class="entity-field" x="540" y="255">${framework}_id (FK)</text>
-                
-                <!-- Relationship Lines -->
-                <path class="relation" d="M300 110 H 200 V 180" marker-end="url(#relation-end)" />
-                <path class="relation" d="M500 110 H 600 V 180" marker-end="url(#relation-end)" />
-                
-                <!-- Relationship markers -->
-                <defs>
-                    <marker id="relation-end" markerWidth="10" markerHeight="7" 
-                    refX="9" refY="3.5" orient="auto">
-                    <polygon points="0 0, 10 3.5, 0 7" fill="#2563EB" />
-                    </marker>
-                </defs>
-            </svg>
-            `;
-        }
+        // Las funciones de creación de mapas y modelos de datos han sido eliminadas
         
         // Voice input button handler (placeholder for future implementation)
         voiceInputButton.addEventListener('click', function() {
