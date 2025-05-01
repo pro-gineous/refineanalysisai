@@ -52,4 +52,11 @@ class Project extends Model
         return $this->belongsTo(User::class);
     }
     
+    /**
+     * Get the attachments for the project.
+     */
+    public function attachments()
+    {
+        return $this->hasMany(Attachment::class);
+    }
 }

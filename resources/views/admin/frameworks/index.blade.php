@@ -3,7 +3,7 @@
 @section('title', 'Frameworks Management')
 
 @section('content')
-<div class="p-4 sm:p-6">
+<div class="p-3 sm:p-6">
     <!-- Header with stats -->
     <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
         <div>
@@ -54,7 +54,7 @@
                         <dl>
                             <dt class="text-sm font-medium text-gray-500 truncate">Active Frameworks</dt>
                             <dd class="flex items-baseline">
-                                <div class="text-2xl font-semibold text-gray-900">{{ $frameworks->where('is_active', true)->count() }}</div>
+                                <div class="text-2xl font-semibold text-gray-900">{{ $frameworks->filter(function($fw) { return $fw->is_active ?? true; })->count() }}</div>
                             </dd>
                         </dl>
                     </div>
@@ -134,9 +134,9 @@
         </div>
         
         <form action="{{ route('admin.frameworks.index') }}" method="GET" class="p-4 sm:p-6 space-y-4">
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
                 <!-- Search -->
-                <div class="md:col-span-2">
+                <div class="col-span-1 sm:col-span-2">
                     <label for="search" class="block text-sm font-medium text-gray-700 mb-1">Find Frameworks</label>
                     <div class="relative rounded-md shadow-sm">
                         <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -177,7 +177,7 @@
                 </div>
             </div>
 
-            <div class="flex justify-end space-x-3">
+            <div class="flex flex-wrap justify-end gap-3 mt-4">
                 <a href="{{ route('admin.frameworks.index') }}" class="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
@@ -193,3 +193,343 @@
             </div>
         </form>
     </div>
+
+    <!-- Main Content Area with Card and Table Views -->
+    <div id="frameworks-wrapper">
+        <!-- Card View -->
+        <div id="card-view" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mb-6 px-2 sm:px-0">
+            @if($frameworks->count() > 0)
+                @foreach($frameworks as $framework)
+                    <div class="bg-white overflow-hidden shadow-sm rounded-lg border border-gray-200 hover:shadow-md transition mobile-framework-card">
+                        <!-- Framework Card Header -->
+                        <div class="px-4 py-3 border-b border-gray-200 flex justify-between items-center">
+                            <h3 class="text-md font-semibold text-gray-800 truncate">{{ $framework->name }}</h3>
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{ $framework->category == 'agile' ? 'bg-green-100 text-green-800' : ($framework->category == 'traditional' ? 'bg-blue-100 text-blue-800' : 'bg-purple-100 text-purple-800') }}">
+                                {{ ucfirst($framework->category) }}
+                            </span>
+                        </div>
+                        
+                        <!-- Framework Card Body -->
+                        <div class="px-4 py-3">
+                            <div class="text-sm text-gray-700 mb-3 min-h-[3rem] max-h-[4rem] overflow-hidden">
+                                {{ Str::limit($framework->description ?? 'No description available', 80) }}
+                            </div>
+                            
+                            <div class="grid grid-cols-2 gap-2 text-sm text-gray-600 mb-3">
+                                <div>
+                                    <span class="text-xs text-gray-500">Version</span>
+                                    <div class="font-medium">{{ $framework->version ?? 'N/A' }}</div>
+                                </div>
+                                <div>
+                                    <span class="text-xs text-gray-500">Projects</span>
+                                    <div class="font-medium">{{ $framework->projects_count ?? 0 }}</div>
+                                </div>
+                            </div>
+                            
+                            <div class="text-xs text-gray-500 mb-3">
+                                Created {{ $framework->created_at->format('M d, Y') }}
+                            </div>
+                        </div>
+                        
+                        <!-- Framework Card Footer -->
+                        <div class="px-4 py-3 bg-gray-50 border-t border-gray-200 flex flex-wrap justify-between gap-2">
+                            <button type="button" class="text-blue-600 hover:text-blue-800 text-sm font-medium framework-preview mobile-touch-target py-2 px-3 -mx-3 rounded" data-id="{{ $framework->id }}">
+                                Preview
+                            </button>
+                            <div class="space-x-3">
+                                <a href="{{ route('admin.frameworks.edit', $framework->id) }}" class="text-gray-600 hover:text-gray-900">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 0L11.828 15.1l-2.12.283.283-2.12L19.414 3.737z" />
+                                    </svg>
+                                </a>
+                                <form action="{{ route('admin.frameworks.destroy', $framework->id) }}" method="POST" class="inline-block">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="text-red-600 hover:text-red-900" onclick="return confirm('Are you sure you want to delete this framework?')">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                        </svg>
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                @endforeach
+                
+                <div class="col-span-full mt-4">
+                    {{ $frameworks->withQueryString()->links() }}
+                </div>
+            @else
+                <div class="col-span-full bg-white rounded-lg shadow p-6 text-center text-gray-500">
+                    No frameworks found. <a href="{{ route('admin.frameworks.create') }}" class="text-blue-600 hover:text-blue-900">Create one</a>.
+                </div>
+            @endif
+        </div>
+
+        <!-- Table View -->
+        <div id="table-view" class="bg-white shadow-sm rounded-lg overflow-hidden hidden">
+            @if($frameworks->count() > 0)
+                <div class="overflow-x-auto -mx-4 sm:mx-0 p-4 sm:p-0">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Version</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Projects</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created</th>
+                                <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            @foreach($frameworks as $framework)
+                                <tr class="hover:bg-gray-50">
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="flex items-center">
+                                            <div>
+                                                <div class="text-sm font-medium text-gray-900">{{ $framework->name }}</div>
+                                                <div class="text-sm text-gray-500 truncate max-w-xs">{{ Str::limit($framework->description ?? '', 50) }}</div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{ $framework->category == 'agile' ? 'bg-green-100 text-green-800' : ($framework->category == 'traditional' ? 'bg-blue-100 text-blue-800' : 'bg-purple-100 text-purple-800') }}">
+                                            {{ ucfirst($framework->category) }}
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ $framework->version ?? 'N/A' }}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ $framework->projects_count ?? 0 }}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ $framework->created_at->format('M d, Y') }}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-y-2 sm:space-y-0 table-action-buttons">
+                                        <button type="button" class="text-blue-600 hover:text-blue-900 mr-3 framework-preview" data-id="{{ $framework->id }}">Preview</button>
+                                        <a href="{{ route('admin.frameworks.edit', $framework->id) }}" class="text-indigo-600 hover:text-indigo-900 mr-3">Edit</a>
+                                        <form action="{{ route('admin.frameworks.destroy', $framework->id) }}" method="POST" class="inline-block">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="text-red-600 hover:text-red-900" onclick="return confirm('Are you sure you want to delete this framework?')">Delete</button>
+                                        </form>
+                                    </td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="px-6 py-4 border-t border-gray-200">
+                    {{ $frameworks->withQueryString()->links() }}
+                </div>
+            @else
+                <div class="px-6 py-4 text-center text-gray-500">
+                    No frameworks found. <a href="{{ route('admin.frameworks.create') }}" class="text-blue-600 hover:text-blue-900">Create one</a>.
+                </div>
+            @endif
+        </div>
+    </div>
+    
+    <!-- Framework Preview Modal -->
+    <div id="framework-preview-modal" class="fixed inset-0 z-50 hidden overflow-y-auto" aria-modal="true" role="dialog">
+        <div class="flex items-center justify-center min-h-screen p-4 text-center sm:p-0">
+            <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true"></div>
+            
+            <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg w-full max-w-[95%] sm:w-full">
+                <div class="absolute top-0 right-0 pt-4 pr-4">
+                    <button type="button" id="close-preview-modal" class="bg-white rounded-md text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                        <span class="sr-only">Close</span>
+                        <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+                
+                <div class="p-6">
+                    <div class="text-center mb-4">
+                        <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-blue-100">
+                            <svg class="h-6 w-6 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+                            </svg>
+                        </div>
+                        <h3 class="text-lg leading-6 font-medium text-gray-900 mt-2" id="modal-framework-name">Framework Details</h3>
+                    </div>
+                    
+                    <div class="mt-4">
+                        <div class="flex justify-between border-b border-gray-200 pb-3 mb-3">
+                            <span class="text-sm font-medium text-gray-500">Category</span>
+                            <span class="text-sm text-gray-900" id="modal-framework-category">-</span>
+                        </div>
+                        <div class="flex justify-between border-b border-gray-200 pb-3 mb-3">
+                            <span class="text-sm font-medium text-gray-500">Version</span>
+                            <span class="text-sm text-gray-900" id="modal-framework-version">-</span>
+                        </div>
+                        <div class="flex justify-between border-b border-gray-200 pb-3 mb-3">
+                            <span class="text-sm font-medium text-gray-500">Created</span>
+                            <span class="text-sm text-gray-900" id="modal-framework-created">-</span>
+                        </div>
+                        <div class="flex justify-between border-b border-gray-200 pb-3 mb-3">
+                            <span class="text-sm font-medium text-gray-500">Projects Using</span>
+                            <span class="text-sm text-gray-900" id="modal-framework-projects">-</span>
+                        </div>
+                        <div class="mb-4">
+                            <span class="text-sm font-medium text-gray-500 block mb-2">Description</span>
+                            <p class="text-sm text-gray-900" id="modal-framework-description">-</p>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-6 flex flex-col sm:flex-row justify-between gap-3">
+                        <a href="#" id="modal-framework-edit" class="inline-flex items-center justify-center w-full sm:w-auto px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 mobile-touch-target">
+                            Edit Framework
+                        </a>
+                        <button type="button" id="close-preview-button" class="inline-flex justify-center w-full sm:w-auto px-4 py-2 border border-transparent text-sm font-medium rounded-md text-blue-700 bg-blue-100 hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 mobile-touch-target">
+                            Close
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        /* Mejoras generales para toda la página */
+        .mobile-touch-target {
+            min-height: 44px; /* Tamaño mínimo recomendado para objetivos táctiles */
+        }
+        
+        /* Estilos específicos para móviles */
+        @media (max-width: 640px) {
+            .table-action-buttons {
+                display: flex;
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 0.5rem;
+            }
+            .table-action-buttons button,
+            .table-action-buttons a {
+                margin-right: 0 !important;
+                padding: 0.35rem 0;
+                display: inline-block;
+                width: 100%;
+                text-align: left;
+            }
+            .mobile-framework-card {
+                box-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24);
+                transition: all 0.3s cubic-bezier(.25,.8,.25,1);
+            }
+            .mobile-framework-card:active {
+                box-shadow: 0 5px 10px rgba(0,0,0,0.19), 0 3px 3px rgba(0,0,0,0.23);
+            }
+        }
+    </style>
+    
+    @push('scripts')
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // View Toggle Functionality
+            const cardViewToggle = document.getElementById('card-view-toggle');
+            const tableViewToggle = document.getElementById('table-view-toggle');
+            const cardView = document.getElementById('card-view');
+            const tableView = document.getElementById('table-view');
+            
+            // Save view preference to localStorage
+            const saveViewPreference = (view) => {
+                localStorage.setItem('frameworksViewPreference', view);
+            };
+            
+            // Apply view preference
+            const applyViewPreference = () => {
+                const preference = localStorage.getItem('frameworksViewPreference') || 'card';
+                if (preference === 'card') {
+                    showCardView();
+                } else {
+                    showTableView();
+                }
+            };
+            
+            const showCardView = () => {
+                cardView.classList.remove('hidden');
+                tableView.classList.add('hidden');
+                cardViewToggle.classList.remove('bg-gray-100', 'text-gray-700');
+                cardViewToggle.classList.add('bg-blue-100', 'text-blue-700');
+                tableViewToggle.classList.remove('bg-blue-100', 'text-blue-700');
+                tableViewToggle.classList.add('bg-gray-100', 'text-gray-700');
+                saveViewPreference('card');
+            };
+            
+            const showTableView = () => {
+                cardView.classList.add('hidden');
+                tableView.classList.remove('hidden');
+                tableViewToggle.classList.remove('bg-gray-100', 'text-gray-700');
+                tableViewToggle.classList.add('bg-blue-100', 'text-blue-700');
+                cardViewToggle.classList.remove('bg-blue-100', 'text-blue-700');
+                cardViewToggle.classList.add('bg-gray-100', 'text-gray-700');
+                saveViewPreference('table');
+            };
+            
+            cardViewToggle.addEventListener('click', showCardView);
+            tableViewToggle.addEventListener('click', showTableView);
+            
+            // Apply saved preference on load
+            applyViewPreference();
+            
+            // Preview Modal Functionality
+            const modal = document.getElementById('framework-preview-modal');
+            const closeModalBtn = document.getElementById('close-preview-modal');
+            const closePreviewBtn = document.getElementById('close-preview-button');
+            const previewButtons = document.querySelectorAll('.framework-preview');
+            
+            function openPreviewModal(frameworkId) {
+                // Get framework data via API
+                fetch(`{{ url('/admin/frameworks') }}/${frameworkId}/preview`)
+                    .then(response => response.json())
+                    .then(data => {
+                        // Populate modal with framework data
+                        document.getElementById('modal-framework-name').textContent = data.name || 'Framework';
+                        document.getElementById('modal-framework-category').textContent = data.category ? data.category.charAt(0).toUpperCase() + data.category.slice(1) : '-';
+                        document.getElementById('modal-framework-version').textContent = data.version || 'v1.0';
+                        document.getElementById('modal-framework-created').textContent = data.created_at ? new Date(data.created_at).toLocaleDateString('en-US', {year: 'numeric', month: 'short', day: 'numeric'}) : '-';
+                        document.getElementById('modal-framework-projects').textContent = data.projects_count ? data.projects_count : '0';
+                        document.getElementById('modal-framework-description').textContent = data.description || 'No description available';
+                        
+                        // Set edit link
+                        document.getElementById('modal-framework-edit').href = `/admin/frameworks/${frameworkId}/edit`;
+                        
+                        // Show modal
+                        modal.classList.remove('hidden');
+                    })
+                    .catch(error => {
+                        console.error('Error fetching framework data:', error);
+                        alert('Failed to load framework details. Please try again.');
+                    });
+            }
+            
+            function closeModal() {
+                modal.classList.add('hidden');
+            }
+            
+            // Add event listeners for preview buttons
+            previewButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    const frameworkId = this.getAttribute('data-id');
+                    openPreviewModal(frameworkId);
+                });
+            });
+            
+            // Close modal with buttons
+            closeModalBtn.addEventListener('click', closeModal);
+            closePreviewBtn.addEventListener('click', closeModal);
+            
+            // Close modal with escape key
+            document.addEventListener('keydown', function(event) {
+                if (event.key === 'Escape' && !modal.classList.contains('hidden')) {
+                    closeModal();
+                }
+            });
+            
+            // Close modal when clicking outside
+            modal.addEventListener('click', function(event) {
+                if (event.target === modal) {
+                    closeModal();
+                }
+            });
+        });
+    </script>
+    @endpush
+@endsection

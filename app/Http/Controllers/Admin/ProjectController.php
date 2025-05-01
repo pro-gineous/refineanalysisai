@@ -215,8 +215,12 @@ class ProjectController extends Controller
         $frameworks = Framework::orderBy('name')->get();
         $users = User::orderBy('name')->get();
         
-        // Load attachments if any
-        $project->load('attachments');
+        // Intentar cargar los attachments si la tabla existe
+        try {
+            $project->load('attachments');
+        } catch (\Exception $e) {
+            // La tabla de attachments puede no existir todavía, continuamos sin cargarlos
+        }
         
         return view('admin.projects.edit', compact('project', 'frameworks', 'users'));
     }
