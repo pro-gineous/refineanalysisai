@@ -1,15 +1,32 @@
 @extends('layouts.dashboard')
 
 @section('content')
-<div class="min-h-screen bg-white">
-    <!-- Simple Header with Back Button -->
-    <div class="container mx-auto p-4">
-        <a href="{{ route('user.ideas-projects') }}" class="inline-flex items-center text-blue-500 hover:text-blue-700 transition-colors">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-            </svg>
-            <span>Back to dashboard</span>
-        </a>
+<div class="min-h-screen bg-gray-50">
+    <!-- Enhanced Header with Journey Information -->
+    <div class="bg-white shadow-sm">
+        <div class="container mx-auto p-4">
+            <div class="flex flex-col md:flex-row md:items-center justify-between">
+                <div class="flex items-center space-x-3 mb-3 md:mb-0">
+                    <a href="{{ route('user.ideas-projects') }}" class="inline-flex items-center text-gray-500 hover:text-blue-600 transition-colors">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                        </svg>
+                    </a>
+                    <div>
+                        <h1 class="text-xl font-semibold text-gray-800">AI {{ isset($journeyType) && $journeyType == 'idea' ? 'Idea' : 'Project' }} Journey</h1>
+                        <p class="text-sm text-gray-500">Let AI guide you through developing your {{ isset($journeyType) && $journeyType == 'idea' ? 'idea' : 'project' }}</p>
+                    </div>
+                </div>
+                
+                <!-- Journey Progress --> 
+                <div class="flex items-center w-full md:w-1/3">
+                    <span class="text-xs text-gray-500 mr-2 whitespace-nowrap">Progress</span>
+                    <div class="w-full bg-gray-200 rounded-full h-2.5">
+                        <div id="journey-progress" class="bg-blue-600 h-2.5 rounded-full transition-all duration-700" style="width: 10%" aria-valuenow="10" aria-valuemin="0" aria-valuemax="100"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
     
     <!-- Minimalist Chat Interface -->
@@ -170,10 +187,16 @@
                 },
                 body: JSON.stringify({ message: message })
             })
-            .then(response => response.json())
+            .then(response => {
+                if (!response.ok) {
+                    console.error('Server error:', response.status, response.statusText);
+                }
+                return response.json();
+            })
             .then(data => {
                 // Hide typing indicator
                 typingIndicator.classList.add('hidden');
+                console.log('AI response data:', data); // Debug log
                 
                 if (data.success) {
                     // Add AI response to chat
@@ -183,13 +206,22 @@
                     if (data.progress) {
                         updateProgress(data.progress);
                     }
+                    
+                    // If we have next steps, show them
+                    if (data.next_steps && data.next_steps.length > 0) {
+                        setTimeout(() => {
+                            addMessage('ai', 'Here are some things to consider: \n• ' + data.next_steps.join('\n• '));
+                        }, 1000);
+                    }
                 } else {
-                    // Show error message
-                    addMessage('ai', 'Sorry, I encountered an error. Please try again.');
+                    // Show detailed error message if available
+                    const errorMsg = data.message || 'Sorry, I encountered an error. Please try again.';
+                    addMessage('ai', errorMsg);
+                    console.error('AI error response:', data.error);
                 }
             })
             .catch(error => {
-                console.error('Error:', error);
+                console.error('Network Error:', error);
                 typingIndicator.classList.add('hidden');
                 addMessage('ai', 'Sorry, there was a network error. Please try again.');
             });

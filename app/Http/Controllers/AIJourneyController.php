@@ -6,6 +6,9 @@ use Illuminate\Http\Request;
 use App\Services\OpenAIService;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Auth;
+use App\Models\AIRequest;
 
 class AIJourneyController extends Controller
 {
@@ -107,35 +110,50 @@ class AIJourneyController extends Controller
     }
     
     /**
-     * Process AI chat message and get a response
+     * Process AI chat message and get a response with enhanced functionality
      * 
      * @param Request $request
      * @return \Illuminate\Http\Response
      */
     public function processChatMessage(Request $request)
     {
-        $openAI = new OpenAIService();
-        $message = $request->input('message');
-        $journeyData = session('ai_journey', []);
-        $journeyType = $journeyData['type'] ?? 'project';
-        
-        // Add user message to journey history
-        $journeyData['messages'][] = [
-            'role' => 'user',
-            'content' => $message,
-            'timestamp' => now()->toString(),
-        ];
-        
-        // Determine what system prompt to use based on journey type and stage
-        $systemPrompt = $this->getSystemPrompt($journeyType, $journeyData);
-        
-        // Generate AI response
         try {
-            $response = $openAI->generateResponse($message, [
-                'system_message' => $systemPrompt,
-                'temperature' => 0.7,
+            // 1. Validate and get input
+            $request->validate([
+                'message' => 'required|string|max:4000',
             ]);
             
+            $message = $request->input('message');
+            $journeyData = session('ai_journey', []);
+            $journeyType = $journeyData['type'] ?? 'project';
+            
+            // 2. Add user message to journey history
+            $journeyData['messages'] = $journeyData['messages'] ?? [];
+            $journeyData['messages'][] = [
+                'role' => 'user',
+                'content' => $message,
+                'timestamp' => now()->toString(),
+            ];
+            
+            // 3. Get system prompt 
+            $systemPrompt = $this->getSystemPrompt($journeyType, $journeyData);
+            
+            // 4. Simple direct call to OpenAI - basic approach to fix immediate issue
+            Log::info('Making AI Journey chat request', [
+                'message_length' => strlen($message),
+                'journey_type' => $journeyType
+            ]);
+            
+            // Create a fresh instance of OpenAIService
+            $openAI = new OpenAIService();
+            
+            // Make a basic API call with minimal options
+            $response = $openAI->generateResponse($message, [
+                'system_message' => $systemPrompt,
+                'request_type' => 'ai_journey'
+            ]);
+            
+            // 5. Process successful response
             // Add AI response to journey history
             $journeyData['messages'][] = [
                 'role' => 'assistant',
@@ -143,26 +161,69 @@ class AIJourneyController extends Controller
                 'timestamp' => now()->toString(),
             ];
             
-            // Update journey progress based on the conversation
+            // Update journey progress
+            $currentProgress = $journeyData['progress'] ?? 0;
+            $journeyData['progress'] = min(95, $currentProgress + 10);
             $journeyData['current_stage'] = $journeyData['current_stage'] ?? 1;
-            $journeyData['progress'] = $journeyData['progress'] ?? 10;
             
-            // Update session data
+            // 6. Save updated journey data
             session(['ai_journey' => $journeyData]);
             
+            // 7. Return success response
             return response()->json([
                 'success' => true,
                 'message' => $response,
-                'progress' => $journeyData['progress'],
+                'progress' => $journeyData['progress']
             ]);
-        } catch (\Exception $e) {
-            Log::error('OpenAI Error: ' . $e->getMessage());
             
+        } catch (\Exception $e) {
+            // Log detailed error
+            Log::error('AI Journey Error: ' . $e->getMessage(), [
+                'exception' => get_class($e),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            // Return user-friendly error
             return response()->json([
                 'success' => false,
-                'message' => 'Sorry, I encountered an error. Please try again.',
-                'error' => $e->getMessage(),
+                'message' => 'Sorry, I encountered an error connecting to the AI service. Please try again.',
+                'error' => 'api_error'
             ], 500);
+        }
+    }
+    
+    /**
+     * Analyze AI response for journey progress indicators
+     * 
+     * @param string $response The AI response text
+     * @param array &$journeyData Journey data to update
+     * @return void
+     */
+    protected function analyzeResponseForJourneyProgress(string $response, array &$journeyData): void
+    {
+        // Keywords that might indicate completion of a stage
+        $completionKeywords = [
+            'next step', 'moving on', 'proceed to', 'let\'s summarize', 
+            'now that we have', 'we\'ve completed', 'you\'ve finished'
+        ];
+        
+        // Check if response contains completion indicators
+        foreach ($completionKeywords as $keyword) {
+            if (stripos($response, $keyword) !== false) {
+                // Advance stage if keyword found and not already at final stage
+                if (!isset($journeyData['current_stage']) || $journeyData['current_stage'] < 5) {
+                    $journeyData['current_stage'] = ($journeyData['current_stage'] ?? 1) + 1;
+                    $journeyData['stage_completed'][] = ($journeyData['current_stage'] - 1);
+                    break;
+                }
+            }
+        }
+        
+        // Extract potential next steps or action items from the response
+        if (preg_match_all('/(?:next steps?|to proceed|should|could)(?:\s+\w+){1,5}\s+(?:try|do|create|implement|consider|think about|explore|analyze)\s+([^.!?]+)[.!?]/i', $response, $matches)) {
+            $journeyData['next_steps'] = array_slice($matches[1], 0, 3); // Get top 3 next steps
         }
     }
     
