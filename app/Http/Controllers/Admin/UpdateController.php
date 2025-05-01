@@ -78,4 +78,76 @@ class UpdateController extends Controller
             return false;
         }
     }
+    
+    public function checkForUpdates()
+    {
+        try {
+            // Check if Git is installed
+            $gitExists = $this->checkGitExists();
+            
+            if (!$gitExists) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Git is not available on the server. Please make sure Git is installed.'
+                ]);
+            }
+            
+            // Project path
+            $projectPath = base_path();
+            
+            // Fetch the latest changes without applying them
+            exec('cd ' . escapeshellarg($projectPath) . ' && git remote update 2>&1', $remoteOutput, $remoteCode);
+            
+            if ($remoteCode !== 0) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Error connecting to the repository.'
+                ]);
+            }
+            
+            // Check if local is behind remote
+            exec('cd ' . escapeshellarg($projectPath) . ' && git status -uno 2>&1', $statusOutput, $statusCode);
+            
+            $behindRemote = false;
+            $currentVersion = '';
+            $latestVersion = '';
+            
+            // Get current version (latest commit hash)
+            exec('cd ' . escapeshellarg($projectPath) . ' && git rev-parse --short HEAD 2>&1', $currentVersionOutput, $versionCode);
+            if ($versionCode === 0 && !empty($currentVersionOutput)) {
+                $currentVersion = 'v1.0-' . $currentVersionOutput[0];
+            }
+            
+            // Check output for behind status
+            foreach ($statusOutput as $line) {
+                if (strpos($line, 'behind') !== false) {
+                    $behindRemote = true;
+                    break;
+                }
+            }
+            
+            // If behind, get the latest version
+            if ($behindRemote) {
+                exec('cd ' . escapeshellarg($projectPath) . ' && git rev-parse --short origin/main 2>&1', $latestVersionOutput, $latestVersionCode);
+                if ($latestVersionCode === 0 && !empty($latestVersionOutput)) {
+                    $latestVersion = 'v1.0-' . $latestVersionOutput[0];
+                }
+            }
+            
+            return response()->json([
+                'success' => true,
+                'hasUpdates' => $behindRemote,
+                'currentVersion' => $currentVersion,
+                'latestVersion' => $behindRemote ? $latestVersion : $currentVersion,
+                'lastChecked' => now()->format('F j, Y \\a\\t g:i A')
+            ]);
+            
+        } catch (\Exception $e) {
+            Log::error('Update check error: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'An error occurred while checking for updates: ' . $e->getMessage()
+            ]);
+        }
+    }
 }

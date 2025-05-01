@@ -131,6 +131,15 @@
                         </svg>
                         <span x-show="sidebarOpen">Reports</span>
                     </a>
+
+                    <!-- System Update -->
+                    <a href="{{ route('admin.update.index') }}" 
+                       class="group flex items-center px-2 py-2 text-sm font-medium rounded-md {{ request()->routeIs('admin.update.*') ? 'bg-indigo-50 text-indigo-600' : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900' }}">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="mr-3 flex-shrink-0 h-6 w-6 {{ request()->routeIs('admin.update.*') ? 'text-indigo-500' : 'text-gray-400 group-hover:text-gray-500' }}" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                        </svg>
+                        <span x-show="sidebarOpen">System Update</span>
+                    </a>
                 </div>
             </nav>
 

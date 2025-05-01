@@ -160,24 +160,54 @@ Route::prefix('admin')->middleware(['auth', 'admin'])->name('admin.')->group(fun
     Route::post('/analytics/track-event', [\App\Http\Controllers\Admin\UserAnalyticsController::class, 'trackEvent'])->name('analytics.track-event');
     
     // User Management
-    Route::resource('users', \App\Http\Controllers\Admin\UserController::class);
+    Route::get('/users', [\App\Http\Controllers\Admin\UserController::class, 'index'])->name('users.index');
+    Route::get('/users/create', [\App\Http\Controllers\Admin\UserController::class, 'create'])->name('users.create');
+    Route::post('/users', [\App\Http\Controllers\Admin\UserController::class, 'store'])->name('users.store');
+    Route::get('/users/{user}', [\App\Http\Controllers\Admin\UserController::class, 'show'])->name('users.show');
+    Route::get('/users/{user}/edit', [\App\Http\Controllers\Admin\UserController::class, 'edit'])->name('users.edit');
+    Route::put('/users/{user}', [\App\Http\Controllers\Admin\UserController::class, 'update'])->name('users.update');
+    Route::delete('/users/{user}', [\App\Http\Controllers\Admin\UserController::class, 'destroy'])->name('users.destroy');
     Route::get('/users/{user}/activity', [\App\Http\Controllers\Admin\UserController::class, 'activity'])->name('users.activity');
     Route::get('/users/{user}/stats', [\App\Http\Controllers\Admin\UserController::class, 'stats'])->name('users.stats');
     
     // Framework Management
-    Route::resource('frameworks', \App\Http\Controllers\Admin\FrameworkController::class);
+    Route::get('/frameworks', [\App\Http\Controllers\Admin\FrameworkController::class, 'index'])->name('frameworks.index');
+    Route::get('/frameworks/create', [\App\Http\Controllers\Admin\FrameworkController::class, 'create'])->name('frameworks.create');
+    Route::post('/frameworks', [\App\Http\Controllers\Admin\FrameworkController::class, 'store'])->name('frameworks.store');
+    Route::get('/frameworks/{framework}', [\App\Http\Controllers\Admin\FrameworkController::class, 'show'])->name('frameworks.show');
+    Route::get('/frameworks/{framework}/edit', [\App\Http\Controllers\Admin\FrameworkController::class, 'edit'])->name('frameworks.edit');
+    Route::put('/frameworks/{framework}', [\App\Http\Controllers\Admin\FrameworkController::class, 'update'])->name('frameworks.update');
+    Route::delete('/frameworks/{framework}', [\App\Http\Controllers\Admin\FrameworkController::class, 'destroy'])->name('frameworks.destroy');
     
     // Site Settings Management
     Route::get('/settings', [\App\Http\Controllers\Admin\SettingsController::class, 'index'])->name('settings');
     Route::post('/settings', [\App\Http\Controllers\Admin\SettingsController::class, 'update'])->name('settings.update');
     
     // Projects & Ideas Management
-    Route::resource('projects', \App\Http\Controllers\Admin\ProjectController::class);
-    Route::resource('ideas', \App\Http\Controllers\Admin\IdeaController::class);
+    Route::get('/projects', [\App\Http\Controllers\Admin\ProjectController::class, 'index'])->name('projects.index');
+    Route::get('/projects/create', [\App\Http\Controllers\Admin\ProjectController::class, 'create'])->name('projects.create');
+    Route::post('/projects', [\App\Http\Controllers\Admin\ProjectController::class, 'store'])->name('projects.store');
+    Route::get('/projects/{project}', [\App\Http\Controllers\Admin\ProjectController::class, 'show'])->name('projects.show');
+    Route::get('/projects/{project}/edit', [\App\Http\Controllers\Admin\ProjectController::class, 'edit'])->name('projects.edit');
+    Route::put('/projects/{project}', [\App\Http\Controllers\Admin\ProjectController::class, 'update'])->name('projects.update');
+    Route::delete('/projects/{project}', [\App\Http\Controllers\Admin\ProjectController::class, 'destroy'])->name('projects.destroy');
+    
+    Route::get('/ideas', [\App\Http\Controllers\Admin\IdeaController::class, 'index'])->name('ideas.index');
+    Route::get('/ideas/create', [\App\Http\Controllers\Admin\IdeaController::class, 'create'])->name('ideas.create');
+    Route::post('/ideas', [\App\Http\Controllers\Admin\IdeaController::class, 'store'])->name('ideas.store');
+    Route::get('/ideas/{idea}', [\App\Http\Controllers\Admin\IdeaController::class, 'show'])->name('ideas.show');
+    Route::get('/ideas/{idea}/edit', [\App\Http\Controllers\Admin\IdeaController::class, 'edit'])->name('ideas.edit');
+    Route::put('/ideas/{idea}', [\App\Http\Controllers\Admin\IdeaController::class, 'update'])->name('ideas.update');
+    Route::delete('/ideas/{idea}', [\App\Http\Controllers\Admin\IdeaController::class, 'destroy'])->name('ideas.destroy');
     
     // AI Settings
     Route::get('/ai-settings', [\App\Http\Controllers\Admin\AISettingController::class, 'index'])->name('ai-settings.index');
     Route::post('/ai-settings', [\App\Http\Controllers\Admin\AISettingController::class, 'update'])->name('ai-settings.update');
+    
+    // System Update from GitHub
+    Route::get('/update', [\App\Http\Controllers\Admin\UpdateController::class, 'index'])->name('update.index');
+    Route::post('/update/pull', [\App\Http\Controllers\Admin\UpdateController::class, 'update'])->name('update.pull');
+    Route::get('/update/check', [\App\Http\Controllers\Admin\UpdateController::class, 'checkForUpdates'])->name('update.check');
     
     // Statistics & Reports
     Route::get('/statistics', [\App\Http\Controllers\Admin\StatisticsController::class, 'index'])->name('statistics.index');

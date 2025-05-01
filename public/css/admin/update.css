@@ -1,0 +1,206 @@
+/* 
+ * Update System Page Styles
+ * -----------------------
+ * CSS styles for Laravel Admin System Update page (Simplified Version)
+ */
+
+/* Main container with elegant styling */
+.update-container {
+    background: #fff;
+    border-radius: 1rem;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
+    padding: 3rem 2rem;
+    max-width: 550px;
+    margin: 2rem auto;
+    text-align: center;
+    border-top: 4px solid #4f46e5;
+    transition: all 0.3s ease;
+}
+
+/* Responsive container adjustments */
+@media (max-width: 640px) {
+    .update-container {
+        padding: 2rem 1.5rem;
+        margin: 1.5rem auto;
+    }
+}
+
+/* Header section */
+.update-header {
+    margin-bottom: 2.5rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid #f3f4f6;
+}
+
+/* Title styling */
+.update-header h2 {
+    font-size: 1.75rem;
+    margin-bottom: 1rem;
+    color: #111827;
+    font-weight: 700;
+}
+
+/* Version badge with enhanced appearance */
+.version-badge {
+    background: linear-gradient(135deg, #4f46e5, #818cf8);
+    color: white;
+    border-radius: 9999px;
+    padding: 0.5rem 1.25rem;
+    font-size: 0.9rem;
+    font-weight: 600;
+    box-shadow: 0 4px 10px rgba(79, 70, 229, 0.25);
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+}
+
+.version-badge:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 15px rgba(79, 70, 229, 0.35);
+}
+
+/* Status container styling */
+.update-status-container {
+    margin-bottom: 2.5rem;
+}
+
+/* Status indicator styling for update status */
+.status-indicator {
+    width: 0.75rem;
+    height: 0.75rem;
+    border-radius: 9999px;
+    display: inline-block;
+    margin-right: 0.5rem;
+    position: relative;
+}
+
+.status-indicator.updated {
+    background-color: #10b981;
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15);
+}
+
+.status-indicator.outdated {
+    background-color: #f59e0b;
+    box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.15);
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% {
+        box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.4);
+    }
+    70% {
+        box-shadow: 0 0 0 6px rgba(245, 158, 11, 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(245, 158, 11, 0);
+    }
+}
+
+/* Update button styling with vibrant gradient */
+.update-btn {
+    background: linear-gradient(135deg, #4f46e5, #4338ca);
+    color: white;
+    border: none;
+    border-radius: 0.75rem;
+    padding: 0.875rem 2rem;
+    font-size: 1rem;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 12px rgba(79, 70, 229, 0.4);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 200px;
+}
+
+.update-btn:hover {
+    background: linear-gradient(135deg, #4338ca, #3730a3);
+    transform: translateY(-3px);
+    box-shadow: 0 8px 20px rgba(79, 70, 229, 0.5);
+}
+
+.update-btn:active {
+    transform: translateY(-1px);
+}
+
+/* Check for updates button styling */
+.check-updates-btn {
+    border: 2px solid #e5e7eb;
+    border-radius: 0.75rem;
+    padding: 0.75rem 1.75rem;
+    font-size: 0.95rem;
+    min-width: 200px;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.check-updates-btn:hover {
+    border-color: #4f46e5;
+    color: #4f46e5;
+    background-color: #f9fafb;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+}
+
+.check-updates-btn:active {
+    transform: translateY(0);
+}
+
+/* Animation for elements fading in */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translate3d(0, 20px, 0);
+    }
+    to {
+        opacity: 1;
+        transform: translate3d(0, 0, 0);
+    }
+}
+
+.animate-fade-in-up {
+    animation: fadeInUp 0.5s ease-out;
+}
+
+/* Toast notification styles */
+.update-toast {
+    position: fixed;
+    bottom: 1.5rem;
+    right: 1.5rem;
+    z-index: 50;
+    max-width: 20rem;
+    background-color: white;
+    border-radius: 0.75rem;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    overflow: hidden;
+    animation: slideInRight 0.3s ease;
+}
+
+@keyframes slideInRight {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+.update-toast-header {
+    background-color: #10b981;
+    color: white;
+    padding: 0.75rem 1.25rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-weight: 600;
+}
+
+.update-toast-body {
+    padding: 1.25rem;
+    color: #1f2937;
+}
