@@ -1561,8 +1561,39 @@
     });
 </script>
 
-<!-- Scripts externos para las visualizaciones y correcciones -->
-<script src="{{ asset('js/ai-journey-fix.js') }}"></script>
-<script src="{{ asset('js/ai-journey-error-fix.js') }}"></script>
+<!-- Implementación definitiva: Cargar solo la solución autónoma -->
+<script>
+    // Sistema de carga autónoma - independiente de errores DOM
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log('✨ Iniciando sistema independiente de visualización...');
+        
+        // Cargar de forma segura el script autónomo
+        const script = document.createElement('script');
+        script.src = '{{ asset("js/ai-journey-standalone.js") }}';
+        script.onerror = function() {
+            console.error('❌ Error al cargar el script de visualización autónomo');
+            showErrorMessage();
+        };
+        document.body.appendChild(script);
+        
+        // Mensaje de error como último recurso
+        function showErrorMessage() {
+            // Buscar un lugar donde mostrar el error
+            const container = document.querySelector('.process-visualization-panel') || 
+                              document.querySelector('.ai-journey-container') ||
+                              document.querySelector('main .container');
+            
+            if (container) {
+                const errorDiv = document.createElement('div');
+                errorDiv.className = 'mt-4 p-4 bg-red-50 border-l-4 border-red-500 text-red-700';
+                errorDiv.innerHTML = `
+                    <p class="font-medium">Error de visualización</p>
+                    <p class="text-sm">No se pudo cargar el componente de visualización del proceso. Por favor, recarga la página o contacta a soporte.</p>
+                `;
+                container.appendChild(errorDiv);
+            }
+        }
+    });
+</script>
 @endsection
 

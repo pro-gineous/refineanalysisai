@@ -6,6 +6,9 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
     <title>{{ config('app.name', 'Refine Analysis') }}</title>
+    
+    <!-- Protección DOM Global - AI Journey Fix -->
+    <script src="{{ asset('js/ai-journey-global-fix.js') }}"></script>
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.bunny.net">

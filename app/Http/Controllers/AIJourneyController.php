@@ -185,11 +185,28 @@ class AIJourneyController extends Controller
                 'trace' => $e->getTraceAsString()
             ]);
             
-            // Return user-friendly error
+            // Better error handling with specific messages
+            $errorType = 'api_error';
+            $userMessage = 'Sorry, I encountered an error connecting to the AI service. Please try again.';
+            
+            // Check for specific error types
+            if (strpos($e->getMessage(), 'api key') !== false || strpos($e->getMessage(), 'authentication') !== false) {
+                $errorType = 'auth_error';
+                $userMessage = 'Authentication error with AI service. Please check API settings in admin panel.';
+            } elseif (strpos($e->getMessage(), 'exceeded') !== false || strpos($e->getMessage(), 'limit') !== false) {
+                $errorType = 'limit_error';
+                $userMessage = 'Usage limit exceeded for AI service. Please try again later.';
+            } elseif (strpos($e->getMessage(), 'timeout') !== false) {
+                $errorType = 'timeout_error';
+                $userMessage = 'The AI service is taking too long to respond. Please try again.';
+            }
+            
+            // Return more specific user-friendly error
             return response()->json([
                 'success' => false,
-                'message' => 'Sorry, I encountered an error connecting to the AI service. Please try again.',
-                'error' => 'api_error'
+                'message' => $userMessage,
+                'error' => $errorType,
+                'debug_info' => config('app.debug') ? $e->getMessage() : null
             ], 500);
         }
     }

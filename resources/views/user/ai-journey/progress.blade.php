@@ -309,4 +309,16 @@
         </div>
     </div>
 </div>
+<!-- Sistema de protección contra errores DOM -->
+<script>
+    // Sistema preventivo para errores "The deferred DOM Node could not be resolved to a valid node"
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log('✨ Aplicando protección de errores DOM para página de progreso...');
+        
+        // Cargar sistema de protección
+        const script = document.createElement('script');
+        script.src = '{{ asset("js/ai-journey-progress.js") }}';
+        document.body.appendChild(script);
+    });
+</script>
 @endsection
