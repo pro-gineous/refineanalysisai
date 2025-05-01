@@ -33,22 +33,91 @@ class OpenAIService
      */
     public function generateResponse(string $prompt, array $options = []): string
     {
+        $user = auth()->user();
+        $userId = $user ? $user->id : null;
+        $requestType = $options['request_type'] ?? 'chat';
+        $model = $options['model'] ?? $this->model;
+        $success = true;
+        $errorMessage = null;
+        $responseText = '';
+        $tokensInput = 0;
+        $tokensOutput = 0;
+        $totalTokens = 0;
+        $estimatedCost = 0;
+        
         try {
+            // Get options or defaults
+            $systemMessage = $options['system_message'] ?? 'You are a helpful assistant for our project management platform.';
+            $maxTokens = $options['max_tokens'] ?? $this->maxTokens;
+            $temperature = $options['temperature'] ?? $this->temperature;
+            
+            // Log the start of the request
+            Log::info('OpenAI API Request', [
+                'model' => $model,
+                'request_type' => $requestType,
+                'user_id' => $userId
+            ]);
+            
+            // Call OpenAI API
             $response = $this->client->chat()->create([
-                'model' => $options['model'] ?? $this->model,
+                'model' => $model,
                 'messages' => [
-                    ['role' => 'system', 'content' => $options['system_message'] ?? 'You are a helpful assistant for our project management platform.'],
+                    ['role' => 'system', 'content' => $systemMessage],
                     ['role' => 'user', 'content' => $prompt]
                 ],
-                'max_tokens' => $options['max_tokens'] ?? $this->maxTokens,
-                'temperature' => $options['temperature'] ?? $this->temperature,
+                'max_tokens' => $maxTokens,
+                'temperature' => $temperature,
             ]);
-
-            return $response->choices[0]->message->content;
+            
+            // Extract response and token information
+            $responseText = $response->choices[0]->message->content;
+            $tokensInput = $response->usage->prompt_tokens ?? 0;
+            $tokensOutput = $response->usage->completion_tokens ?? 0;
+            $totalTokens = $response->usage->total_tokens ?? 0;
+            
+            // Calculate estimated cost (very rough estimate)
+            // Adjust these rates based on OpenAI's current pricing
+            $inputRate = ($model === 'gpt-4' || $model === 'gpt-4o') ? 0.00003 : 0.00001;
+            $outputRate = ($model === 'gpt-4' || $model === 'gpt-4o') ? 0.00006 : 0.00002;
+            $estimatedCost = ($tokensInput * $inputRate) + ($tokensOutput * $outputRate);
+            
+            // Log successful response
+            Log::info('OpenAI API Response', [
+                'tokens' => $totalTokens,
+                'model' => $model,
+                'success' => true
+            ]);
         } catch (\Exception $e) {
+            // Log error and update variables for error case
             Log::error('OpenAI API Error: ' . $e->getMessage());
-            return 'Sorry, I encountered an error while processing your request. Please try again later.';
+            $success = false;
+            $errorMessage = $e->getMessage();
+            $responseText = 'Sorry, I encountered an error while processing your request. Please try again later.';
         }
+        
+        // Record the request in database
+        try {
+            \App\Models\AIRequest::create([
+                'user_id' => $userId,
+                'request_type' => $requestType,
+                'model' => $model,
+                'tokens_input' => $tokensInput,
+                'tokens_output' => $tokensOutput,
+                'total_tokens' => $totalTokens,
+                'estimated_cost' => $estimatedCost,
+                'prompt' => $prompt,
+                'response' => $responseText,
+                'metadata' => $options,
+                'success' => $success,
+                'error_message' => $errorMessage,
+                'ip_address' => request()->ip(),
+            ]);
+        } catch (\Exception $dbError) {
+            // Just log the database error, don't change the response
+            Log::error('Error recording AI request: ' . $dbError->getMessage());
+        }
+        
+        return $responseText;
     }
 
     /**
