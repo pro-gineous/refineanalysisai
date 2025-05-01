@@ -36,6 +36,10 @@ Route::prefix('')->group(function () {
     Route::get('/login', function() { return redirect()->route('signin'); })->middleware('guest');
     Route::post('/login', [\App\Http\Controllers\AuthController::class, 'login'])->name('login')->middleware('guest');
     Route::post('/logout', [\App\Http\Controllers\AuthController::class, 'logout'])->name('logout');
+    
+    // OpenAI Test routes (accessible without login for testing)
+    Route::get('/openai-test', [\App\Http\Controllers\OpenAITestController::class, 'testConnection'])->name('openai.test');
+    Route::get('/direct-test', [\App\Http\Controllers\OpenAIDirectTestController::class, 'testDirectConnection'])->name('openai.direct.test');
 });
 
 // User dashboard routes

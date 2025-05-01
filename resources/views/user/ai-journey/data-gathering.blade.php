@@ -727,31 +727,61 @@
             
             // Reset inputs but keep the form data valid for sending
             const messageToSend = message;
+            
+            // ¡IMPORTANTE! El problema principal: debemos asegurarnos de que formData tiene el mensaje
+            // antes de limpiar el campo de entrada
+            formData.set('message', messageToSend);
+            
+            // Ahora podemos limpiar la interfaz después de capturar el mensaje
             userMessageInput.value = '';
             selectedFiles = [];
             renderFilePreview(); // Clear file preview area
             fileUploadInput.value = ''; // Reset file input
             
-            // Send message and files to server using fetch para tener más control
-            fetch(chatForm.action, {
+            // Mensaje de diagnóstico para confirmar que estamos usando el código original sin interceptores
+            console.log('Sending message directly to API without any interceptors');
+            
+            // Usar directamente el API de OpenAI desde backend sin interceptores
+            console.log('\u{1F680} Enviando mensaje directamente al backend que usa OpenAI API');
+            console.log('\u{1F4DD} Mensaje:', formData.get('message'));
+            
+            // Petición directa al backend que usará API de OpenAI usando mfetch
+            const originalFetch = window.fetch;
+            originalFetch(chatForm.action, {
                 method: 'POST',
                 headers: {
                     'X-CSRF-TOKEN': document.querySelector('input[name="_token"]').value,
+                    'Cache-Control': 'no-cache, no-store, must-revalidate',
+                    'Pragma': 'no-cache',
+                    'Expires': '0',
+                    'X-Direct-API': 'true' // Marcar que queremos usar API directa
                 },
                 body: formData
             })
-            .then(response => response.json())
+            .then(response => {
+                console.log('\u{1F4E1} Respuesta recibida del servidor:', response.status);
+                return response.json();
+            })
             .then(data => {
-                // Log for debugging but limit output size
-                console.log('AI response received:', data.success ? 'success' : 'error');
+                // Verificar que la respuesta viene de OpenAI API
+                const isFromRealAPI = data.source === 'openai_api';
+                console.log(
+                    `%c\u{1F916} ${isFromRealAPI ? 'RESPUESTA REAL DE OPENAI API' : 'RESPUESTA LOCAL'}`, 
+                    `color: ${isFromRealAPI ? 'green' : 'red'}; font-weight: bold;`
+                );
                 
                 // Wait a bit before hiding typing indicator for more natural feel
                 setTimeout(() => {
                     hideTypingIndicator();
                     
+                    // If response is successful, display it
                     if (data.success) {
-                        // Add AI response
-                        addMessage('ai', formatMessageContent(data.response), true);
+                        addMessage('ai', data.message || data.response, true);
+                        
+                        // Update progress if provided
+                        if (data.journeyProgress) {
+                            updateProgress(data.journeyProgress);
+                        }
                         
                         // Process pending questions if any were detected
                         if (data.pendingQuestions && Array.isArray(data.pendingQuestions)) {
@@ -761,13 +791,8 @@
                         }
                         
                         // Update deliverable progress if provided
-                                        if (data.deliverables && Array.isArray(data.deliverables)) {
+                        if (data.deliverables && Array.isArray(data.deliverables)) {
                             updateDeliverables(data.deliverables);
-                        }
-                        
-                        // Update overall journey progress
-                        if (data.journeyProgress) {
-                            updateProgress(data.journeyProgress);
                         }
                     } else {
                         // Show error message
@@ -777,7 +802,7 @@
                     // Re-enable input
                     toggleInputState(false);
                     userMessageInput.focus();
-                }, 500 + Math.random() * 1000); // Random delay for more natural feeling
+                }, 500);
             })
             .catch(error => {
                 console.error('Request Error:', error);
@@ -1595,5 +1620,16 @@
         }
     });
 </script>
-@endsection
 
+<!-- Script desactivado para permitir que las respuestas vengan directamente de la API real -->
+<!-- <script src="{{ asset('js/ai-journey-chat-fix-new.js') }}" defer></script> -->
+
+<!-- Mensaje de confirmación para verificar que estamos usando la API directamente -->
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log('%c✅ API DIRECTA ACTIVADA: Los mensajes de chat vendrán directamente de la API oficial de OpenAI', 'color: green; font-weight: bold; font-size: 14px');
+        console.log('API Key Length:', {{ strlen(env('OPENAI_API_KEY', '')) }});
+        console.log('API Model:', '{{ env('OPENAI_MODEL', 'undefined') }}');
+    });
+</script>
+@endsection

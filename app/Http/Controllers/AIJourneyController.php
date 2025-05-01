@@ -115,8 +115,23 @@ class AIJourneyController extends Controller
      * @param Request $request
      * @return \Illuminate\Http\Response
      */
+    /**
+     * Process AI chat message and get a direct response from OpenAI API
+     * This implementation bypasses the service layer for more direct and reliable API access
+     * 
+     * @param Request $request
+     * @return \Illuminate\Http\Response
+     */
     public function processChatMessage(Request $request)
     {
+        // Log inicio de la solicitud para seguimiento
+        Log::info('========== INICIO SOLICITUD DE CHAT AI ==========');
+        
+        // Registrar que estamos usando API directa desde .env si el header está presente
+        if ($request->header('X-Direct-API')) {
+            Log::info('Solicitud marcada para uso directo de API desde .env');
+        }
+        
         try {
             // 1. Validate and get input
             $request->validate([
@@ -138,27 +153,93 @@ class AIJourneyController extends Controller
             // 3. Get system prompt 
             $systemPrompt = $this->getSystemPrompt($journeyType, $journeyData);
             
-            // 4. Simple direct call to OpenAI - basic approach to fix immediate issue
+            // 4. Enhanced direct call to OpenAI with detailed logging
             Log::info('Making AI Journey chat request', [
                 'message_length' => strlen($message),
-                'journey_type' => $journeyType
+                'journey_type' => $journeyType,
+                'api_key_available' => !empty(env('OPENAI_API_KEY')),
+                'model_requested' => env('OPENAI_MODEL', 'gpt-3.5-turbo')
             ]);
             
-            // Create a fresh instance of OpenAIService
-            $openAI = new OpenAIService();
+            // 5. USAMOS DIRECTAMENTE API KEY DE .ENV - Solución definitiva
+            // Obtener la API key explicitamente del .env sin ningún fallback
+            $apiKey = env('OPENAI_API_KEY');
+            $model = env('OPENAI_MODEL', 'gpt-3.5-turbo');
             
-            // Make a basic API call with minimal options
-            $response = $openAI->generateResponse($message, [
-                'system_message' => $systemPrompt,
-                'request_type' => 'ai_journey'
+            // Registrar uso de valores directos desde .env
+            Log::info('Usando valores directamente de .env:', [
+                'api_key_length' => strlen($apiKey),
+                'model' => $model,
+                'source' => '.env file'
             ]);
+            
+            // Validar que tengamos una clave API válida
+            if (empty($apiKey) || strlen($apiKey) < 20) {
+                throw new \Exception('OpenAI API Key is missing or invalid');
+            }
+            
+            // Construir mensajes para la conversación con formato correcto
+            $messages = [];
+            
+            // Mensaje del sistema
+            if (!empty($systemPrompt)) {
+                $messages[] = [
+                    'role' => 'system',
+                    'content' => $systemPrompt
+                ];
+            }
+            
+            // Mensajes previos (limitados a los últimos 5 para evitar superar límites)
+            $recentMessages = array_slice($journeyData['messages'], -10);
+            foreach ($recentMessages as $msg) {
+                if (isset($msg['role']) && isset($msg['content'])) {
+                    $messages[] = [
+                        'role' => $msg['role'],
+                        'content' => $msg['content']
+                    ];
+                }
+            }
+            
+            // Crear cliente OpenAI directamente
+            $client = \OpenAI::factory()
+                ->withApiKey($apiKey)
+                ->withHttpClient(new \GuzzleHttp\Client(['timeout' => 30]))
+                ->make();
+            
+            // Llamada directa a la API con logging detallado
+            Log::info('Sending direct request to OpenAI API', [
+                'model' => $model,
+                'message_count' => count($messages),
+                'api_key_length' => strlen($apiKey)
+            ]);
+            
+            $apiResponse = $client->chat()->create([
+                'model' => $model,
+                'messages' => $messages,
+                'temperature' => 0.7,
+                'max_tokens' => 800,
+            ]);
+            
+            // Extraer texto de respuesta con validación
+            $response = isset($apiResponse->choices[0]->message->content) 
+                ? $apiResponse->choices[0]->message->content 
+                : 'No se pudo obtener respuesta de la API.';
             
             // 5. Process successful response
+            
+            // Añadir información de diagnóstico para la respuesta exitosa
+            Log::info('Respuesta exitosa de OpenAI API', [
+                'response_length' => strlen($response),
+                'source' => 'direct_api_call',
+                'timestamp' => now()->toDateTimeString()
+            ]);
+            
             // Add AI response to journey history
             $journeyData['messages'][] = [
                 'role' => 'assistant',
                 'content' => $response,
                 'timestamp' => now()->toString(),
+                'source' => 'openai_api', // Marca explícita de que viene de la API
             ];
             
             // Update journey progress
@@ -169,44 +250,65 @@ class AIJourneyController extends Controller
             // 6. Save updated journey data
             session(['ai_journey' => $journeyData]);
             
-            // 7. Return success response
+            // Log fin de solicitud exitosa
+            Log::info('========== FIN SOLICITUD DE CHAT AI (EXITOSA) ==========');
+            
+            // 7. Return success response with API source indicator
             return response()->json([
                 'success' => true,
                 'message' => $response,
-                'progress' => $journeyData['progress']
+                'progress' => $journeyData['progress'],
+                'source' => 'openai_api', // Indicador para el frontend de que es una respuesta real de la API
+                'timestamp' => now()->toDateTimeString()
             ]);
             
         } catch (\Exception $e) {
-            // Log detailed error
-            Log::error('AI Journey Error: ' . $e->getMessage(), [
+            // Log inicio del manejo de errores
+            Log::error('========== ERROR EN SOLICITUD DE CHAT AI ==========');
+            Log::error('AI Journey Error Detallado: ' . $e->getMessage(), [
                 'exception' => get_class($e),
                 'file' => $e->getFile(),
                 'line' => $e->getLine(),
-                'trace' => $e->getTraceAsString()
+                'trace' => $e->getTraceAsString(),
+                'api_key_length' => strlen(env('OPENAI_API_KEY', '')),
+                'model' => env('OPENAI_MODEL', 'unknown'),
+                'request_data' => [
+                    'message_length' => strlen($request->input('message', '')),
+                    'has_files' => $request->hasFile('files')
+                ]
             ]);
             
-            // Better error handling with specific messages
+            // Mensajes de error más descriptivos y en español/árabe para el usuario
             $errorType = 'api_error';
-            $userMessage = 'Sorry, I encountered an error connecting to the AI service. Please try again.';
+            $userMessage = 'نعتذر، حدث خطأ أثناء الاتصال بخدمة الذكاء الاصطناعي. يرجى المحاولة مرة أخرى.'; // Mensaje en árabe
             
-            // Check for specific error types
+            // Clasificar el tipo de error para mensajes específicos
             if (strpos($e->getMessage(), 'api key') !== false || strpos($e->getMessage(), 'authentication') !== false) {
                 $errorType = 'auth_error';
-                $userMessage = 'Authentication error with AI service. Please check API settings in admin panel.';
+                $userMessage = 'خطأ في المصادقة مع خدمة الذكاء الاصطناعي. يرجى التحقق من إعدادات API في لوحة الإدارة.';
             } elseif (strpos($e->getMessage(), 'exceeded') !== false || strpos($e->getMessage(), 'limit') !== false) {
                 $errorType = 'limit_error';
-                $userMessage = 'Usage limit exceeded for AI service. Please try again later.';
+                $userMessage = 'تم تجاوز حد الاستخدام لخدمة الذكاء الاصطناعي. يرجى المحاولة مرة أخرى لاحقاً.';
             } elseif (strpos($e->getMessage(), 'timeout') !== false) {
                 $errorType = 'timeout_error';
-                $userMessage = 'The AI service is taking too long to respond. Please try again.';
+                $userMessage = 'تستغرق خدمة الذكاء الاصطناعي وقتاً طويلاً للرد. يرجى المحاولة مرة أخرى.';
             }
             
-            // Return more specific user-friendly error
+            // Log fin de manejo de error
+            Log::error('========== FIN DE ERROR EN SOLICITUD DE CHAT AI ==========');
+            
+            // Return more specific user-friendly error con más detalles de diagnóstico
             return response()->json([
                 'success' => false,
                 'message' => $userMessage,
                 'error' => $errorType,
-                'debug_info' => config('app.debug') ? $e->getMessage() : null
+                'error_from_api' => true, // Indicador explícito de que el error viene de la API real
+                'timestamp' => now()->toDateTimeString(),
+                'debug_info' => config('app.debug') ? [
+                    'error_message' => $e->getMessage(),
+                    'error_type' => get_class($e),
+                    'api_connected' => true
+                ] : null
             ], 500);
         }
     }

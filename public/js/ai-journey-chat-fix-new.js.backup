@@ -1,0 +1,314 @@
+/**
+ * AI Journey Chat Fix - Script para manejar errores de API y garantizar funcionamiento
+ * Este script intercepta las solicitudes de chat y proporciona respuestas de fallback
+ * cuando la API devuelve error 500, pero siempre intenta usar la API real primero.
+ */
+
+(function() {
+    // Configuración de la solución de respaldo
+    const config = {
+        // Intentar usar la API real primero (debe estar en true para producción)
+        useRealApiFirst: true,
+        // Número de intentos de conexión a la API real antes de usar respaldo
+        maxApiAttempts: 5, // Aumentado a 5 intentos para resolver problemas de conectividad
+        // Mostrar indicador visual cuando se use respuesta de respaldo
+        showFallbackIndicator: true,
+        // Registrar información de depuración en consola
+        debug: true
+    };
+    
+    console.log('[AI Journey Chat Fix] Initialized with config:', 
+               {useRealApi: config.useRealApiFirst, attempts: config.maxApiAttempts});
+    
+    // Esperar a que el DOM esté listo
+    document.addEventListener('DOMContentLoaded', function() {
+        // Interceptar todas las solicitudes a la API de chat
+        interceptFetchRequests();
+    });
+    
+    // También ejecutar inmediatamente por si el DOM ya está cargado
+    if (document.readyState === 'interactive' || document.readyState === 'complete') {
+        interceptFetchRequests();
+    }
+    
+    /**
+     * Intercepta todas las llamadas fetch para manejar errores de la API de chat
+     */
+    function interceptFetchRequests() {
+        // IMPORTANTE: Guardar referencia original a fetch antes de sobreescribirla
+        const originalFetch = window.fetch;
+        
+        window.fetch = function(url, options) {
+            // Solo interceptar solicitudes a la API de chat
+            if (typeof url === 'string' && url.includes('/user/ai-journey/chat')) {
+                if (config.debug) {
+                    console.log('[AI Journey Chat Fix] Intercepting chat request to:', url);
+                }
+                
+                // Extraer el mensaje del usuario de la solicitud para el registro y posible respaldo
+                let userMessage = '';
+                
+                if (options && options.body instanceof FormData) {
+                    userMessage = options.body.get('message') || '';
+                }
+                
+                // Solo si estamos configurados para usar la API real primero
+                if (config.useRealApiFirst) {
+                    // Intentar usar la API real con el número de intentos configurado
+                    return safeApiCall(originalFetch, url, options, userMessage, config.maxApiAttempts);
+                } else {
+                    // Usar directamente la respuesta local
+                    console.log('[AI Journey Chat Fix] Using local response directly (API bypassed)');
+                    return Promise.resolve(createMockResponse(userMessage, true));
+                }
+            }
+            
+            // Para el resto de solicitudes, comportamiento normal
+            return originalFetch(url, options);
+        };
+    }
+    
+    /**
+     * Intenta usar la API real con reintentos antes de usar respuesta local
+     * Esta implementación evita la recursión infinita al recibir la función fetch original como parámetro
+     * @param {Function} fetchFunc - La función fetch original
+     * @param {string} url - URL a la que hacer la petición
+     * @param {Object} options - Opciones de la petición fetch
+     * @param {string} userMessage - Mensaje del usuario para generar respuesta de respaldo
+     * @param {number} attemptsLeft - Número de intentos restantes
+     * @returns {Promise} Promesa con la respuesta
+     */
+    function safeApiCall(fetchFunc, url, options, userMessage, attemptsLeft) {
+        if (config.debug) {
+            console.log(`[AI Journey Chat Fix] API attempt, ${attemptsLeft} attempts remaining`);
+        }
+        
+        return new Promise((resolve, reject) => {
+            // Usamos la función fetch original que se pasó como parámetro
+            // Esto evita usar window.fetch que hemos reemplazado (y evita la recursión infinita)
+            fetchFunc(url, options)
+                .then(response => {
+                    if (response.ok) {
+                        // Indicador visual para respuesta de API real
+                        showResponseIndicator(false);
+                        
+                        if (config.debug) {
+                            console.log('[AI Journey Chat Fix] Real API response successful');
+                        }
+                        
+                        // Éxito - usar respuesta real de la API
+                        resolve(response);
+                    } else {
+                        console.warn(`[AI Journey Chat Fix] API responded with status ${response.status}`);
+                        
+                        // Falló este intento
+                        if (attemptsLeft > 1) {
+                            // Intentar de nuevo pero con un intento menos
+                            setTimeout(() => {
+                                // Llamada recursiva segura con el fetch original
+                                resolve(safeApiCall(fetchFunc, url, options, userMessage, attemptsLeft - 1));
+                            }, 1000); // Esperar 1 segundo entre intentos
+                        } else {
+                            // Se acabaron los intentos, usar respuesta local
+                            console.log('[AI Journey Chat Fix] Falling back to local response after API failure');
+                            showResponseIndicator(true);
+                            resolve(createMockResponse(userMessage));
+                        }
+                    }
+                })
+                .catch(error => {
+                    console.error('[AI Journey Chat Fix] Fetch error:', error);
+                    
+                    // Error de red u otro error
+                    if (attemptsLeft > 1) {
+                        // Intentar de nuevo
+                        setTimeout(() => {
+                            // Llamada recursiva segura con el fetch original
+                            resolve(safeApiCall(fetchFunc, url, options, userMessage, attemptsLeft - 1));
+                        }, 1000);
+                    } else {
+                        // Se acabaron los intentos, usar respuesta local
+                        console.log('[AI Journey Chat Fix] Falling back to local response after network error');
+                        showResponseIndicator(true);
+                        resolve(createMockResponse(userMessage));
+                    }
+                });
+        });
+    }
+    
+    /**
+     * Crea una respuesta simulada basada en el mensaje del usuario
+     */
+    function createMockResponse(userMessage, isBypassedApi = false) {
+        const responseData = generateLocalResponse(userMessage, isBypassedApi);
+        return new Response(
+            JSON.stringify(responseData),
+            {
+                status: 200,
+                headers: { 'Content-Type': 'application/json' }
+            }
+        );
+    }
+    
+    /**
+     * Muestra un indicador visual de que se está usando una respuesta local
+     */
+    function showResponseIndicator(isFallback) {
+        if (!config.showFallbackIndicator) return;
+        
+        // Solo mostrar indicador visual si estamos usando respuesta local
+        if (isFallback) {
+            // Crear un elemento de notificación si no existe
+            let indicator = document.getElementById('api-fallback-indicator');
+            if (!indicator) {
+                indicator = document.createElement('div');
+                indicator.id = 'api-fallback-indicator';
+                indicator.style.position = 'fixed';
+                indicator.style.top = '10px';
+                indicator.style.left = '50%';
+                indicator.style.transform = 'translateX(-50%)';
+                indicator.style.backgroundColor = 'rgba(220, 38, 38, 0.9)';
+                indicator.style.color = 'white';
+                indicator.style.padding = '12px 20px';
+                indicator.style.borderRadius = '4px';
+                indicator.style.fontSize = '14px';
+                indicator.style.fontWeight = 'bold';
+                indicator.style.zIndex = '9999';
+                indicator.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.2)';
+                indicator.style.textAlign = 'center';
+                indicator.style.direction = 'rtl';
+                document.body.appendChild(indicator);
+            }
+            
+            indicator.innerHTML = '<span style="color: yellow">⚠️</span> تنبيه: فشل الاتصال بواجهة الذكاء الاصطناعي - استخدام الرد المحلي البديل';
+            indicator.style.display = 'block';
+            
+            // También agregar un prefijo a todas las respuestas locales para mayor claridad
+            window.aiJourneyFallbackMode = true;
+            
+            // Mantener visible durante toda la sesión de fallback
+            clearTimeout(window.fallbackNoticeTimeout);
+            window.fallbackNoticeTimeout = setTimeout(() => {
+                indicator.style.display = 'none';
+            }, 10000);
+        } else {
+            window.aiJourneyFallbackMode = false;
+        }
+    }
+    
+    /**
+     * Genera una respuesta local basada en el mensaje del usuario
+     * @param {string} userMessage - El mensaje enviado por el usuario
+     * @param {boolean} isBypassedApi - Si se ha evitado la API a propósito
+     * @returns {Object} Respuesta simulada para la API
+     */
+    function generateLocalResponse(userMessage, isBypassedApi = false) {
+        const prefix = `<div class="p-2 mb-2 rounded bg-yellow-50 border-l-4 border-yellow-500 text-amber-800 rtl" dir="rtl">
+            <p class="font-bold"><span class="text-xl">⚠️</span> ملاحظة: هذا رد محلي بسبب تعذر الوصول إلى واجهة API.</p>
+            <p class="text-sm">يرجى التحقق من اتصال الخادم أو مفتاح API الخاص بك.</p>
+        </div>`;
+            
+        console.log('[AI Journey Chat Fix] Generating local response for:', userMessage);
+        
+        // Obtener el framework actual
+        const currentFramework = window.currentFramework || 
+                               document.querySelector('select[name="framework"]')?.value || 
+                               'default';
+        
+        // Determinar una respuesta basada en el mensaje del usuario
+        let aiResponse = '';
+        
+        if (userMessage.toLowerCase().includes('hello') || userMessage.toLowerCase().includes('hi')) {
+            aiResponse = prefix + `مرحبًا! أنا هنا لمساعدتك في رحلة ${currentFramework}. كيف يمكنني مساعدتك اليوم؟`;
+        } 
+        else if (userMessage.toLowerCase().includes('file') || userMessage.toLowerCase().includes('upload')) {
+            aiResponse = prefix + `أرى أنك مهتم بتحميل الملفات. يمكنك تحميل المستندات بالنقر على أيقونة مشبك الورق في الأسفل. سأقوم بتحليلها ودمج المعلومات في سير عمل ${currentFramework}.`;
+        }
+        else if (userMessage.toLowerCase().includes('process') || userMessage.toLowerCase().includes('map')) {
+            aiResponse = prefix + `إذا كنت ترغب في رؤية خريطة العملية لـ ${currentFramework}، يمكنك النقر على زر "إنشاء خريطة العملية" في لوحة التصور على اليسار. هذا سيعطيك نظرة عامة مرئية على المنهجية التي نتبعها.`;
+        }
+        else if (userMessage.toLowerCase().includes('data model') || userMessage.toLowerCase().includes('model')) {
+            aiResponse = prefix + `يمكنك عرض نموذج البيانات لـ ${currentFramework} بالنقر على زر "إنشاء نموذج البيانات" في لوحة التصور. هذا سيوضح لك كيف ترتبط الكيانات المختلفة ببعضها في هذه المنهجية.`;
+        }
+        else if (userMessage.toLowerCase().includes('expert') || userMessage.toLowerCase().includes('sme')) {
+            aiResponse = prefix + `إذا كنت بحاجة إلى مدخلات من خبراء الموضوع (SMEs)، يمكنني مساعدتك في صياغة أسئلة يمكن تعيينها للمتخصصين المناسبين. هل ترغب في إنشاء سؤال نموذجي للمراجعة من قبل خبير؟`;
+        }
+        else {
+            // Respuesta genérica basada en el framework
+            if (currentFramework === 'prince2') {
+                aiResponse = prefix + `استنادًا إلى منهجية PRINCE2، يجب أن نركز على دراسة الجدوى والتنظيم والجودة والخطط والمخاطر والتغيير والتقدم لمشروعك. هل ترغب في شرح أي من هذه المجالات بمزيد من التفصيل؟`;
+            } 
+            else if (currentFramework === 'idea-management') {
+                aiResponse = prefix + `في إطار إدارة الأفكار، نحتاج إلى التقاط وتقييم وتطوير وتنفيذ الأفكار بشكل فعال. دعنا نستكشف كيف يمكننا تطبيق هذا النهج على احتياجاتك المحددة.`;
+            }
+            else if (currentFramework === 'scrum') {
+                aiResponse = prefix + `باستخدام Scrum، سننظم العمل في سباقات، ونعقد اجتماعات يومية، ونراجع التقدم بانتظام. هل ترغب في مناقشة كيفية إعداد قائمة المنتجات المتراكمة أو التخطيط لسباقك الأول؟`;
+            }
+            else {
+                aiResponse = prefix + `أفهم أنك تعمل على مشروع أو فكرة. لتقديم إرشادات أكثر تحديدًا، هل يمكنك إخباري المزيد عن أهدافك وما تأمل في تحقيقه؟`;
+            }
+        }
+        
+        // Crear una respuesta simulada que imita la estructura de la API
+        return {
+            success: true,
+            message: aiResponse, 
+            response: aiResponse,
+            journeyProgress: calculateNextProgress(),
+            pendingQuestions: [], 
+            deliverables: generateSampleDeliverables(currentFramework)
+        };
+    }
+    
+    /**
+     * Calcula el próximo valor de progreso
+     * @returns {number} Valor de progreso incrementado
+     */
+    function calculateNextProgress() {
+        // Obtener el valor de progreso actual
+        const progressElement = document.getElementById('journey-progress');
+        if (!progressElement) return 50; // Valor por defecto
+        
+        const currentProgress = parseInt(progressElement.getAttribute('aria-valuenow') || '10');
+        
+        // Incrementar el progreso, pero máximo hasta 95%
+        return Math.min(95, currentProgress + Math.floor(Math.random() * 10) + 5);
+    }
+    
+    /**
+     * Genera entregables de ejemplo basados en el framework
+     * @param {string} framework - El framework actual
+     * @returns {Array} Lista de entregables con estado actualizado
+     */
+    function generateSampleDeliverables(framework) {
+        const deliverables = [];
+        
+        // Personalizar entregables según el framework
+        if (framework === 'prince2') {
+            deliverables.push({
+                id: 'business-case',
+                name: 'Business Case',
+                progress: Math.min(100, Math.floor(Math.random() * 40) + 60),
+                status: 'in-progress'
+            });
+        } 
+        else if (framework === 'idea-management') {
+            deliverables.push({
+                id: 'idea-evaluation',
+                name: 'Idea Evaluation Matrix',
+                progress: Math.min(100, Math.floor(Math.random() * 40) + 60),
+                status: 'in-progress'
+            });
+        }
+        else if (framework === 'scrum') {
+            deliverables.push({
+                id: 'product-backlog',
+                name: 'Product Backlog',
+                progress: Math.min(100, Math.floor(Math.random() * 40) + 60),
+                status: 'in-progress'
+            });
+        }
+        
+        return deliverables;
+    }
+})();
